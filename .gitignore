@@ -1,1 +1,15 @@
 /Debug/
+*.bak
+*.launch
+*.log
+.buildpath
+.classpath
+# .cproject
+.metadata/
+# .project
+.pydevproject
+.recommenders/
+.remote/
+.settings/
+.target/
+org.eclipse.jdt.core.prefs
