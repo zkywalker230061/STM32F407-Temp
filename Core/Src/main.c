@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "bsp/fpu.h"
+#include "application/sensor_curves.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,7 +66,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  bsp_FPU_Enable();
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -89,7 +89,14 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  float resistance = 2000.0f;
+  float temp = resistance_to_temperature(resistance);
+  while (1)
+  {
+	  printf("Resistance: %.4f ohm\r\n", resistance);
+	  printf("Temperature: %.4f\r\n", temp);
+	  HAL_Delay(1000);
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -99,7 +106,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  printf("Hello World\n\r");
+	  printf("Hello World\r\n");
 	  HAL_Delay(1000);
   }
   /* USER CODE END 3 */
