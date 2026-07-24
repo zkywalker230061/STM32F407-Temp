@@ -5,10 +5,9 @@ float resistance_to_temperature(float resistance) {
 		return TEMP_ERROR;
 	}
 
-	float z = log10f(resistance);
-
 	for (int i = 0; i < SEGMENT_COUNT; i++) {
-		if (z >= g_segments[i].z_min && z < g_segments[i].z_max) {
+		if (resistance >= g_segments[i].r_right
+				&& resistance < g_segments[i].r_left) {
 			return chebychev_point(
 					resistance,
 					g_segments[i].z_min, g_segments[i].z_max,

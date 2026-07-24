@@ -89,12 +89,12 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  float resistance = 2000.0f;
+  float resistance = 539.0093f;
   float temp = resistance_to_temperature(resistance);
   while (1)
   {
 	  printf("Resistance: %.4f ohm\r\n", resistance);
-	  printf("Temperature: %.4f K\r\n", temp);
+	  printf("Temperature: %.5f K\r\n", temp);
 	  HAL_Delay(1000);
   }
   /* USER CODE END 2 */
