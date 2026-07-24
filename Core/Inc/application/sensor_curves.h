@@ -6,6 +6,15 @@
 
 #define TEMP_ERROR  -999.9f
 
+typedef struct {
+	float z_min;  /* log10(R) lower bound (high temperature end) */
+	float z_max;  /* log10(R) upper bound (low temperature end) */
+	const float *coeffs;
+	int order;
+} CurveSegment_t;
+
+#include "storage/sensor_coeffs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -94,7 +94,7 @@ int main(void)
   while (1)
   {
 	  printf("Resistance: %.4f ohm\r\n", resistance);
-	  printf("Temperature: %.4f\r\n", temp);
+	  printf("Temperature: %.4f K\r\n", temp);
 	  HAL_Delay(1000);
   }
   /* USER CODE END 2 */
