@@ -25,6 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "bsp/ad4130.h"
 #include "application/sensor_curves.h"
 /* USER CODE END Includes */
 
@@ -93,6 +94,15 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+
+  ADC1_Init();
+  ADC2_Init();
+
+  uint8_t id1 = ADC1_ReadID();
+  uint8_t id2 = ADC2_ReadID();
+  printf("ADC1 ID: 0x%02X\r\n", id1);
+  printf("ADC2 ID: 0x%02X\r\n", id2);
+
   float resistance = 539.0093f;
   float temp = resistance_to_temperature(resistance);
   printf("Resistance: %.4f ohm\r\n", resistance);
