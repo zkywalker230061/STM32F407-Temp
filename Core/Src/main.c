@@ -95,12 +95,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   float resistance = 539.0093f;
   float temp = resistance_to_temperature(resistance);
-  while (1)
-  {
-	  printf("Resistance: %.4f ohm\r\n", resistance);
-	  printf("Temperature: %.5f K\r\n", temp);
-	  HAL_Delay(1000);
-  }
+  printf("Resistance: %.4f ohm\r\n", resistance);
+  printf("Temperature: %.5f K\r\n", temp);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -110,7 +106,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  printf("Hello World\r\n");
+	  /* printf("Hello World\r\n"); */
 	  HAL_Delay(1000);
   }
   /* USER CODE END 3 */
@@ -192,6 +188,7 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  printf("Wrong parameters value: file %s on line %lu\r\n", file, line);
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
