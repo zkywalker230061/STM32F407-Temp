@@ -15,12 +15,16 @@ extern "C" {
 void ADC1_Init(void);
 uint8_t ADC1_Read_8_bit(uint8_t reg_addr);
 uint16_t ADC1_Read_16_bit(uint8_t reg_addr);
+uint32_t ADC1_Read_24_bit(uint8_t reg_addr);
+uint32_t ADC1_Read_32_bit(uint8_t reg_addr);
 void ADC1_Write(uint8_t reg_addr, uint8_t *data, uint16_t len);
 uint8_t ADC1_ReadID(void);
 
 void ADC2_Init(void);
 uint8_t ADC2_Read_8_bit(uint8_t reg_addr);
 uint16_t ADC2_Read_16_bit(uint8_t reg_addr);
+uint32_t ADC2_Read_24_bit(uint8_t reg_addr);
+uint32_t ADC2_Read_32_bit(uint8_t reg_addr);
 void ADC2_Write(uint8_t reg_addr, uint8_t *data, uint16_t len);
 uint8_t ADC2_ReadID(void);
 
