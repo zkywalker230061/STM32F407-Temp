@@ -88,6 +88,7 @@ extern "C" {
 #define AD4130_FIFO_THRESHOLD 0x3C  /* 24 bits */
 #define AD4130_FIFO_DATA      0x3D  /* 24 bits */
 
+void ADC1_Reset(void);
 void ADC1_Init(void);
 uint8_t ADC1_Read_8_bit(uint8_t reg_addr);
 uint16_t ADC1_Read_16_bit(uint8_t reg_addr);
@@ -96,6 +97,7 @@ uint32_t ADC1_Read_32_bit(uint8_t reg_addr);
 void ADC1_Write(uint8_t reg_addr, uint8_t *data, uint16_t len);
 uint8_t ADC1_ReadID(void);
 
+void ADC2_Reset(void);
 void ADC2_Init(void);
 uint8_t ADC2_Read_8_bit(uint8_t reg_addr);
 uint16_t ADC2_Read_16_bit(uint8_t reg_addr);

@@ -95,12 +95,33 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
   ADC1_Init();
-  ADC2_Init();
-
+  printf("ADC1\r\n");
+  /*ID: 0x05 - 0000 0101 */
   uint8_t id1 = ADC1_ReadID();
+  printf("ID: 0x%02X\r\n", id1);
+  /* STATUS (init): 0x10 - 0001 0000 */
+  uint8_t status1 = ADC1_Read_8_bit(AD4130_STATUS);
+  printf("STATUS: 0x%02X\r\n", status1);
+  /* ERROR: 0x0000 - 0000 0000 0000 0000 */
+  uint16_t error1 = ADC1_Read_16_bit(AD4130_ERROR);
+  printf("ERROR: 0x%04X\r\n", error1);
+
+  /* ADC_CONTROL: 0x0200 - 0000 0010 0000 0000 */
+  /* IO_CONTROL: 0x0000 - 0000 0000 0000 0000 */
+  /* VBIAS_CONTROL: 0x0000 - 0000 0000 0000 0000 */
+  /* ERROR_EN: 0x0078 - 0000 0000 0111 1000 */
+
+  ADC2_Init();
+  printf("ADC2\r\n");
+  /*ID: 0x05 - 0000 0101 */
   uint8_t id2 = ADC2_ReadID();
-  printf("ADC1 ID: 0x%02X\r\n", id1);
-  printf("ADC2 ID: 0x%02X\r\n", id2);
+  printf("ID: 0x%02X\r\n", id2);
+  /* STATUS (init): 0x10 - 0001 0000 */
+  uint8_t status2 = ADC2_Read_8_bit(AD4130_STATUS);
+  printf("STATUS: 0x%02X\r\n", status2);
+  /* ERROR: 0x0000 - 0000 0000 0000 0000 */
+  uint16_t error2 = ADC2_Read_16_bit(AD4130_ERROR);
+  printf("ERROR: 0x%04X\r\n", error2);
 
   float resistance = 539.0093f;
   float temp = resistance_to_temperature(resistance);

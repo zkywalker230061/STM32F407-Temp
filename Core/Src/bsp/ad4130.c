@@ -1,17 +1,38 @@
 #include "bsp/ad4130.h"
 
 /* ADC1 (CS = PA4) */
+/* ------------------------------------------------------------------------ */
+void ADC1_Reset(void)
+{
+	uint8_t tx[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+	HAL_GPIO_WritePin(SPI1_CS1_GPIO_Port, SPI1_CS1_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, tx, 8, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(SPI1_CS1_GPIO_Port, SPI1_CS1_Pin, GPIO_PIN_SET);
+
+	HAL_Delay(100);
+}
+
 void ADC1_Init(void)
 {
-	uint16_t ctrl_val;
+	uint16_t control_val;
+	uint16_t error_en_val;
 	uint8_t tx[2];
 
-	ctrl_val = ADC1_Read_16_bit(AD4130_ADC_CONTROL);
-	ctrl_val |= 0x0200;  /* Bit 9: CSB_EN */
-	tx[0] = (ctrl_val >> 8) & 0xFF;
-	tx[1] = ctrl_val & 0xFF;
+	ADC1_Reset();
 
+	/* Bit 9: CSB_EN */
+	control_val = 0x0200;
+	tx[0] = (control_val >> 8) & 0xFF;
+	tx[1] = control_val & 0xFF;
 	ADC1_Write(AD4130_ADC_CONTROL, tx, 2);
+
+	/* Bits 3,4,5,6 */
+	/* SPI_WRITE_ERROR_EN,SPI_READ_ERR_EN,SPI_SCLK_CNT_ERR_EN,SPI_IGNORE_ERR_EN */
+	error_en_val = 0x0078;
+	tx[0] = (error_en_val >> 8) & 0xFF;
+	tx[1] = error_en_val & 0xFF;
+	ADC1_Write(AD4130_ERROR_EN, tx, 2);
 }
 
 uint8_t ADC1_Read_8_bit(uint8_t reg_addr)
@@ -112,6 +133,8 @@ void ADC1_Write(uint8_t reg_addr, uint8_t *data, uint16_t len)
 	HAL_GPIO_WritePin(SPI1_CS1_GPIO_Port, SPI1_CS1_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, tx_cache, 1 + len, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(SPI1_CS1_GPIO_Port, SPI1_CS1_Pin, GPIO_PIN_SET);
+
+	HAL_Delay(100);
 }
 
 uint8_t ADC1_ReadID(void)
@@ -120,16 +143,37 @@ uint8_t ADC1_ReadID(void)
 }
 
 /* ADC2 (CS = PC4) */
+/* ------------------------------------------------------------------------ */
+void ADC2_Reset(void)
+{
+	uint8_t tx[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+	HAL_GPIO_WritePin(SPI1_CS2_GPIO_Port, SPI1_CS2_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi1, tx, 8, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(SPI1_CS2_GPIO_Port, SPI1_CS2_Pin, GPIO_PIN_SET);
+
+	HAL_Delay(100);
+}
+
 void ADC2_Init(void) {
-	uint16_t ctrl_val;
+	uint16_t control_val;
+	uint16_t error_en_val;
 	uint8_t tx[2];
 
-	ctrl_val = ADC2_Read_16_bit(AD4130_ADC_CONTROL);
-	ctrl_val |= 0x0200;  /* Bit 9: CSB_EN */
-	tx[0] = (ctrl_val >> 8) & 0xFF;
-	tx[1] = ctrl_val & 0xFF;
+	ADC2_Reset();
 
+	/* Bit 9: CSB_EN */
+	control_val = 0x0200;
+	tx[0] = (control_val >> 8) & 0xFF;
+	tx[1] = control_val & 0xFF;
 	ADC2_Write(AD4130_ADC_CONTROL, tx, 2);
+
+	/* Bits 3,4,5,6 */
+	/* SPI_WRITE_ERROR_EN,SPI_READ_ERR_EN,SPI_SCLK_CNT_ERR_EN,SPI_IGNORE_ERR_EN */
+	error_en_val = 0x0078;
+	tx[0] = (error_en_val >> 8) & 0xFF;
+	tx[1] = error_en_val & 0xFF;
+	ADC2_Write(AD4130_ERROR_EN, tx, 2);
 }
 
 uint8_t ADC2_Read_8_bit(uint8_t reg_addr)
@@ -228,6 +272,8 @@ void ADC2_Write(uint8_t reg_addr, uint8_t *data, uint16_t len)
 	HAL_GPIO_WritePin(SPI1_CS2_GPIO_Port, SPI1_CS2_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, tx_cache, 1 + len, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(SPI1_CS2_GPIO_Port, SPI1_CS2_Pin, GPIO_PIN_SET);
+
+	HAL_Delay(100);
 }
 
 uint8_t ADC2_ReadID(void)
