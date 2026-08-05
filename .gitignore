@@ -1,4 +1,5 @@
 /Debug/
+tmp
 *.bak
 *.launch
 *.log

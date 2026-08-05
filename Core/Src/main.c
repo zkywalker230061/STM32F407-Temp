@@ -123,6 +123,9 @@ int main(void)
   uint16_t error2 = ADC2_Read_16_bit(AD4130_ERROR);
   printf("ERROR: 0x%04X\r\n", error2);
 
+  ADC2_Config();
+  ADC2_Filter();
+
   float resistance = 539.0093f;
   float temp = resistance_to_temperature(resistance);
   printf("Resistance: %.4f ohm\r\n", resistance);
