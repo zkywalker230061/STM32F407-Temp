@@ -300,6 +300,8 @@ void ADC2_Config(void)
 	uint8_t config_val_iout[8];
 	uint8_t tx[2];
 
+	/* Bits 12-10,7,6,5-4,3-1 */
+	/* I_OUT0_n,REF_BUFP_n,REF_BUFM_n,REF_SEL_n,PGA_n */
 	config_val_common = 0b0000000011101110;
 	config_val_iout[0] = 0b0000;  /* Off */
 	config_val_iout[1] = 0b0111;  /* 100 nA */
@@ -309,9 +311,6 @@ void ADC2_Config(void)
 	config_val_iout[5] = 0b0100;  /* 100 μA */
 	config_val_iout[6] = 0b0101;  /* 150 μA */
 	config_val_iout[7] = 0b0110;  /* 200 μA */
-
-	/* Bits 12-10,7,6,5-4,3-1 */
-	/* I_OUT0_n,REF_BUFP_n,REF_BUFM_n,REF_SEL_n,PGA_n */
 	for (uint8_t i = 0; i < 8; i++)
 	{
 		config_val = config_val_common | (config_val_iout[i] << 10);
@@ -330,10 +329,24 @@ void ADC2_Filter(void)
 	/* SETTLE_n,FILTER_MODE_n,FS_n */
 	for (uint8_t i = 0; i < 8; i++)
 	{
-		filter_val = 0b111000000000000000000000;
+		filter_val = 0b111000000001000000001010;
 		tx[0] = (filter_val >> 16) & 0xFF;
 		tx[1] = (filter_val >> 8) & 0xFF;
 		tx[2] = filter_val & 0xFF;
 		ADC2_Write(AD4130_FILTER_0 + i, tx, 3);
 	}
+}
+
+void ADC2_Channel_0(void)
+{
+	uint32_t channel_0_val;
+	uint8_t tx[3];
+
+	/* Bits 23,22-20,17-13,12-8,3-0 */
+	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
+	channel_0_val = 0b101000000100001100000000;
+	tx[0] = (channel_0_val >> 16) & 0xFF;
+	tx[1] = (channel_0_val >> 8) & 0xFF;
+	tx[2] = channel_0_val & 0xFF;
+	ADC2_Write(AD4130_CHANNEL_0, tx, 3);
 }

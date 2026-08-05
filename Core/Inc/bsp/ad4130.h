@@ -109,6 +109,7 @@ void ADC2_Write(uint8_t reg_addr, uint8_t *data, uint16_t len);
 uint8_t ADC2_ReadID(void);
 void ADC2_Config(void);
 void ADC2_Filter(void);
+void ADC2_Channel_0(void);
 
 #ifdef __cplusplus
 }
