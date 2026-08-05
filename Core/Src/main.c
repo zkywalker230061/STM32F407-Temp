@@ -127,28 +127,28 @@ int main(void)
   ADC2_Filter();
   ADC2_Channel_0();
 
-  const float iout_0 = 10.0e-6f;
   const float vref = 1.25f;
   const float gain = 128.0f;
+  const float iout_0 = 10.0e-6f;
 
   while (1)
   {
 	  uint32_t data_status = ADC2_Read_32_bit(AD4130_DATA);
 	  uint8_t status = data_status & 0xFF;
-	  uint32_t data = data_status >> 8 & 0xFFFFFF;
+	  uint32_t data = (data_status >> 8) & 0xFFFFFF;
 	  printf("STATUS: 0x%02X\r\n", status);
-	  printf("DATA: 0x%06X\r\n", data);
-
-	  if ((status & 0x80U) != 0U)
+	  printf("DATA: 0x%06lX\r\n", data);
+	  if ((status & 0x80) != 0)
 	  {
+		  HAL_Delay(1);
 		  continue;
 	  }
 
-	  float voltage = (float)data * vref / gain / 16777216.0f;
-	  float resistance = voltage / iout_0;
-	  float temp = resistance_to_temperature(resistance);
-	  printf("Resistance: %.4f ohm\r\n", resistance);
-	  printf("Temperature: %.5f K\r\n", temp);
+	  float voltage_0 = (float)data / 16777216.0f * vref / gain;
+	  float resistance_0 = voltage_0 / iout_0;
+	  float temperature_0 = resistance_to_temperature(resistance_0);
+	  printf("Resistance: %.4f ohm\r\n", resistance_0);
+	  printf("Temperature: %.5f K\r\n", temperature_0);
 	  HAL_Delay(10000);
   }
   /* USER CODE END 2 */
