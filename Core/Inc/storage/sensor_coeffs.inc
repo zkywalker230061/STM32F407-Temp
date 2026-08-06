@@ -1,13 +1,11 @@
-#ifndef COEFFS_H
-#define COEFFS_H
+#ifndef SENSOR_COEFFS_INC
+#define SENSOR_COEFFS_INC
 
 /* Sensor: X105970 */
 
-#include <math.h>
-
 #define SEGMENT_COUNT 4
 
-static const CurveSegment_t g_segments[SEGMENT_COUNT] = {
+static const CurveSegment_t segments[SEGMENT_COUNT] = {
 	{
 		.z_min = log10f(539.00929271077f),
 		.z_max = log10f(21510.2f),
@@ -50,5 +48,5 @@ static const CurveSegment_t g_segments[SEGMENT_COUNT] = {
 	},
 };
 
-#endif  /* COEFFS_H */
+#endif  /* SENSOR_COEFFS_INC */
 

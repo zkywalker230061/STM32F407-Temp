@@ -4,23 +4,11 @@
 #include <math.h>
 #include "application/chebychev.h"
 
-#define TEMP_ERROR  -999.9f
-
-typedef struct {
-	float z_min;  /* log10(R) lower bound (high temperature end) */
-	float z_max;  /* log10(R) upper bound (low temperature end) */
-	float r_left;  /* resistance near z_min */
-	float r_right;  /* resistance near z_max */
-	/* z_max(r) < r_left < r_right < z_min(r) */
-	const float *coeffs;
-	int order;
-} CurveSegment_t;
-
-#include "storage/sensor_coeffs.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define TEMP_ERROR  -999.9f
 
 float resistance_to_temperature(float resistance);
 

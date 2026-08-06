@@ -131,7 +131,8 @@ void ADC1_Write(uint8_t reg_addr, uint8_t *data, uint16_t len)
 	uint8_t tx_cache[1 + len];
 
 	tx_cache[0] = reg_addr;
-	for (uint16_t i = 0; i < len; i++) {
+	for (uint16_t i = 0; i < len; i++)
+	{
 		tx_cache[1 + i] = data[i];
 	}
 
@@ -278,7 +279,8 @@ void ADC2_Write(uint8_t reg_addr, uint8_t *data, uint16_t len)
 	uint8_t tx_cache[1 + len];
 
 	tx_cache[0] = reg_addr;
-	for (uint16_t i = 0; i < len; i++) {
+	for (uint16_t i = 0; i < len; i++)
+	{
 		tx_cache[1 + i] = data[i];
 	}
 
