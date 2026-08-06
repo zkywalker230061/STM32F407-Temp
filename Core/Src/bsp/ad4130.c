@@ -38,13 +38,11 @@ void ADC1_Init(void)
 
 uint8_t ADC1_Read_8_bit(uint8_t reg_addr)
 {
-	uint8_t tx_cache[2];
-	uint8_t rx_cache[2];
-	uint8_t rx;
+	uint8_t tx_cache[2] = {0};
+	uint8_t rx_cache[2] = {0};
+	uint8_t rx = 0;
 
 	tx_cache[0] = 0b01000000 | reg_addr;  /* COMMS, read */
-	tx_cache[1] = 0b00000000;
-	rx = 0;
 
 	HAL_GPIO_WritePin(SPI1_CS1_GPIO_Port, SPI1_CS1_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi1, tx_cache, rx_cache, 2, HAL_MAX_DELAY);
@@ -56,14 +54,11 @@ uint8_t ADC1_Read_8_bit(uint8_t reg_addr)
 
 uint16_t ADC1_Read_16_bit(uint8_t reg_addr)
 {
-	uint8_t tx_cache[3];
-	uint8_t rx_cache[3];
-	uint16_t rx;
+	uint8_t tx_cache[3] = {0};
+	uint8_t rx_cache[3] = {0};
+	uint16_t rx = 0;
 
 	tx_cache[0] = 0b01000000 | reg_addr;  /* COMMS, read */
-	tx_cache[1] = 0b00000000;
-	tx_cache[2] = 0b00000000;
-	rx = 0;
 
 	HAL_GPIO_WritePin(SPI1_CS1_GPIO_Port, SPI1_CS1_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi1, tx_cache, rx_cache, 3, HAL_MAX_DELAY);
@@ -78,15 +73,11 @@ uint16_t ADC1_Read_16_bit(uint8_t reg_addr)
 
 uint32_t ADC1_Read_24_bit(uint8_t reg_addr)
 {
-	uint8_t tx_cache[4];
-	uint8_t rx_cache[4];
-	uint32_t rx;
+	uint8_t tx_cache[4] = {0};
+	uint8_t rx_cache[4] = {0};
+	uint32_t rx = 0;
 
 	tx_cache[0] = 0b01000000 | reg_addr;  /* COMMS, read */
-	tx_cache[1] = 0b00000000;
-	tx_cache[2] = 0b00000000;
-	tx_cache[3] = 0b00000000;
-	rx = 0;
 
 	HAL_GPIO_WritePin(SPI1_CS1_GPIO_Port, SPI1_CS1_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi1, tx_cache, rx_cache, 4, HAL_MAX_DELAY);
@@ -102,16 +93,11 @@ uint32_t ADC1_Read_24_bit(uint8_t reg_addr)
 
 uint32_t ADC1_Read_32_bit(uint8_t reg_addr)
 {
-	uint8_t tx_cache[5];
-	uint8_t rx_cache[5];
-	uint32_t rx;
+	uint8_t tx_cache[5] = {0};
+	uint8_t rx_cache[5] = {0};
+	uint32_t rx = 0;
 
 	tx_cache[0] = 0b01000000 | reg_addr;  /* COMMS, read */
-	tx_cache[1] = 0b00000000;
-	tx_cache[2] = 0b00000000;
-	tx_cache[3] = 0b00000000;
-	tx_cache[4] = 0b00000000;
-	rx = 0;
 
 	HAL_GPIO_WritePin(SPI1_CS1_GPIO_Port, SPI1_CS1_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi1, tx_cache, rx_cache, 5, HAL_MAX_DELAY);
@@ -186,13 +172,11 @@ void ADC2_Init(void)
 
 uint8_t ADC2_Read_8_bit(uint8_t reg_addr)
 {
-	uint8_t tx_cache[2];
-	uint8_t rx_cache[2];
-	uint8_t rx;
+	uint8_t tx_cache[2] = {0};
+	uint8_t rx_cache[2] = {0};
+	uint8_t rx = 0;
 
 	tx_cache[0] = 0b01000000 | reg_addr;  /* COMMS, read */
-	tx_cache[1] = 0b00000000;
-	rx = 0;
 
 	HAL_GPIO_WritePin(SPI1_CS2_GPIO_Port, SPI1_CS2_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi1, tx_cache, rx_cache, 2, HAL_MAX_DELAY);
@@ -204,14 +188,11 @@ uint8_t ADC2_Read_8_bit(uint8_t reg_addr)
 
 uint16_t ADC2_Read_16_bit(uint8_t reg_addr)
 {
-	uint8_t tx_cache[3];
-	uint8_t rx_cache[3];
-	uint16_t rx;
+	uint8_t tx_cache[3] = {0};
+	uint8_t rx_cache[3] = {0};
+	uint16_t rx = 0;
 
 	tx_cache[0] = 0b01000000 | reg_addr;  /* COMMS, read */
-	tx_cache[1] = 0b00000000;
-	tx_cache[2] = 0b00000000;
-	rx = 0;
 
 	HAL_GPIO_WritePin(SPI1_CS2_GPIO_Port, SPI1_CS2_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi1, tx_cache, rx_cache, 3, HAL_MAX_DELAY);
@@ -226,15 +207,11 @@ uint16_t ADC2_Read_16_bit(uint8_t reg_addr)
 
 uint32_t ADC2_Read_24_bit(uint8_t reg_addr)
 {
-	uint8_t tx_cache[4];
-	uint8_t rx_cache[4];
-	uint32_t rx;
+	uint8_t tx_cache[4] = {0};
+	uint8_t rx_cache[4] = {0};
+	uint32_t rx = 0;
 
 	tx_cache[0] = 0b01000000 | reg_addr;  /* COMMS, read */
-	tx_cache[1] = 0b00000000;
-	tx_cache[2] = 0b00000000;
-	tx_cache[3] = 0b00000000;
-	rx = 0;
 
 	HAL_GPIO_WritePin(SPI1_CS2_GPIO_Port, SPI1_CS2_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi1, tx_cache, rx_cache, 4, HAL_MAX_DELAY);
@@ -250,16 +227,11 @@ uint32_t ADC2_Read_24_bit(uint8_t reg_addr)
 
 uint32_t ADC2_Read_32_bit(uint8_t reg_addr)
 {
-	uint8_t tx_cache[5];
-	uint8_t rx_cache[5];
-	uint32_t rx;
+	uint8_t tx_cache[5] = {0};
+	uint8_t rx_cache[5] = {0};
+	uint32_t rx = 0;
 
 	tx_cache[0] = 0b01000000 | reg_addr;  /* COMMS, read */
-	tx_cache[1] = 0b00000000;
-	tx_cache[2] = 0b00000000;
-	tx_cache[3] = 0b00000000;
-	tx_cache[4] = 0b00000000;
-	rx = 0;
 
 	HAL_GPIO_WritePin(SPI1_CS2_GPIO_Port, SPI1_CS2_Pin, GPIO_PIN_RESET);
 	HAL_SPI_TransmitReceive(&hspi1, tx_cache, rx_cache, 5, HAL_MAX_DELAY);
@@ -301,7 +273,7 @@ void ADC2_Config(void)
 	uint16_t config_val;
 	uint16_t config_val_common;
 	uint8_t config_val_iout[8];
-	uint8_t tx[2];
+	uint8_t tx[2] = {0};
 
 	/* Bits 12-10,7,6,5-4,3-1 */
 	/* I_OUT0_n,REF_BUFP_n,REF_BUFM_n,REF_SEL_n,PGA_n */
@@ -326,13 +298,13 @@ void ADC2_Config(void)
 void ADC2_Filter(void)
 {
 	uint32_t filter_val;
-	uint8_t tx[3];
+	uint8_t tx[3] = {0};
 
 	/* Bits 23-21,15-12,10-0 */
 	/* SETTLE_n,FILTER_MODE_n,FS_n */
 	for (uint8_t i = 0; i < 8; i++)
 	{
-		filter_val = 0b111000000000000000001010;
+		filter_val = 0b111000000011000000110000;
 		tx[0] = (filter_val >> 16) & 0xFFU;
 		tx[1] = (filter_val >> 8) & 0xFFU;
 		tx[2] = filter_val & 0xFFU;
@@ -343,7 +315,7 @@ void ADC2_Filter(void)
 void ADC2_Channel_0(void)
 {
 	uint32_t channel_0_val;
-	uint8_t tx[3];
+	uint8_t tx[3] = {0};
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
