@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-void bsp_FPU_Enable(void);
+void FPU_Enable(void);
 
 #ifdef __cplusplus
 }

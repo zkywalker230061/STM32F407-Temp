@@ -24,15 +24,15 @@ void ADC1_Init(void)
 	/* Bit 13,10,9,8 */
 	/* INT_REF_VAL,DATA_STATUS,CSB_EN,INT_REF_EN */
 	control_val = 0b0010011100000000;
-	tx[0] = (control_val >> 8) & 0xFF;
-	tx[1] = control_val & 0xFF;
+	tx[0] = (control_val >> 8) & 0xFFU;
+	tx[1] = control_val & 0xFFU;
 	ADC1_Write(AD4130_ADC_CONTROL, tx, 2);
 
 	/* Bits 6,5,4,3 */
 	/* SPI_IGNORE_ERR_EN,SPI_SCLK_CNT_ERR_EN,SPI_READ_ERR_EN,SPI_WRITE_ERR_EN */
 	error_en_val = 0b0000000001111000;
-	tx[0] = (error_en_val >> 8) & 0xFF;
-	tx[1] = error_en_val & 0xFF;
+	tx[0] = (error_en_val >> 8) & 0xFFU;
+	tx[1] = error_en_val & 0xFFU;
 	ADC1_Write(AD4130_ERROR_EN, tx, 2);
 }
 
@@ -160,7 +160,8 @@ void ADC2_Reset(void)
 	HAL_Delay(10);
 }
 
-void ADC2_Init(void) {
+void ADC2_Init(void)
+{
 	uint16_t control_val;
 	uint16_t error_en_val;
 	uint8_t tx[2];
@@ -170,15 +171,15 @@ void ADC2_Init(void) {
 	/* Bit 13,10,9,8 */
 	/* INT_REF_VAL,DATA_STATUS,CSB_EN,INT_REF_EN */
 	control_val = 0b0010011100000000;
-	tx[0] = (control_val >> 8) & 0xFF;
-	tx[1] = control_val & 0xFF;
+	tx[0] = (control_val >> 8) & 0xFFU;
+	tx[1] = control_val & 0xFFU;
 	ADC2_Write(AD4130_ADC_CONTROL, tx, 2);
 
 	/* Bits 6,5,4,3 */
 	/* SPI_IGNORE_ERR_EN,SPI_SCLK_CNT_ERR_EN,SPI_READ_ERR_EN,SPI_WRITE_ERR_EN */
 	error_en_val = 0b0000000001111000;
-	tx[0] = (error_en_val >> 8) & 0xFF;
-	tx[1] = error_en_val & 0xFF;
+	tx[0] = (error_en_val >> 8) & 0xFFU;
+	tx[1] = error_en_val & 0xFFU;
 	ADC2_Write(AD4130_ERROR_EN, tx, 2);
 }
 
@@ -314,8 +315,8 @@ void ADC2_Config(void)
 	for (uint8_t i = 0; i < 8; i++)
 	{
 		config_val = config_val_common | (config_val_iout[i] << 10);
-		tx[0] = (config_val >> 8) & 0xFF;
-		tx[1] = config_val & 0xFF;
+		tx[0] = (config_val >> 8) & 0xFFU;
+		tx[1] = config_val & 0xFFU;
 		ADC2_Write(AD4130_CONFIG_0 + i, tx, 2);
 	}
 }
@@ -329,10 +330,10 @@ void ADC2_Filter(void)
 	/* SETTLE_n,FILTER_MODE_n,FS_n */
 	for (uint8_t i = 0; i < 8; i++)
 	{
-		filter_val = 0b111000000001000000001010;
-		tx[0] = (filter_val >> 16) & 0xFF;
-		tx[1] = (filter_val >> 8) & 0xFF;
-		tx[2] = filter_val & 0xFF;
+		filter_val = 0b111000000000000000001010;
+		tx[0] = (filter_val >> 16) & 0xFFU;
+		tx[1] = (filter_val >> 8) & 0xFFU;
+		tx[2] = filter_val & 0xFFU;
 		ADC2_Write(AD4130_FILTER_0 + i, tx, 3);
 	}
 }
@@ -345,8 +346,8 @@ void ADC2_Channel_0(void)
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
 	channel_0_val = 0b101000000100001100000000;
-	tx[0] = (channel_0_val >> 16) & 0xFF;
-	tx[1] = (channel_0_val >> 8) & 0xFF;
-	tx[2] = channel_0_val & 0xFF;
+	tx[0] = (channel_0_val >> 16) & 0xFFU;
+	tx[1] = (channel_0_val >> 8) & 0xFFU;
+	tx[2] = channel_0_val & 0xFFU;
 	ADC2_Write(AD4130_CHANNEL_0, tx, 3);
 }
