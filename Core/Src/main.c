@@ -94,69 +94,102 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-	ADC1_Init();
-	printf("ADC1\r\n");
-	/*ID: 0x05 - 0000 0101 */
-	uint8_t id1 = ADC1_ReadID();
-	printf("ID: 0x%02X\r\n", id1);
-	/* STATUS (init): 0x90 - 1001 0000 or 0x10 - 0001 0000 */
-	uint8_t status1 = ADC1_Read_8_bit(AD4130_STATUS);
-	printf("STATUS: 0x%02X\r\n", status1);
-	/* ERROR: 0x0000 - 0000 0000 0000 0000 */
-	uint16_t error1 = ADC1_Read_16_bit(AD4130_ERROR);
-	printf("ERROR: 0x%04X\r\n", error1);
+	HAL_StatusTypeDef result;
+	AD4130InitResult_t init_result[2] = {0};
 
-	/* ADC_CONTROL: 0x2700 - 0010 0111 0000 0000 */
-	/* IO_CONTROL: 0x0000 - 0000 0000 0000 0000 */
-	/* VBIAS_CONTROL: 0x0000 - 0000 0000 0000 0000 */
-	/* ERROR_EN: 0x0078 - 0000 0000 0111 1000 */
+	for (uint8_t i = 0; i < 2U; i++)
+	{
+		result = AD4130_Init(i+1U, &init_result[i]);
+		if (result == HAL_OK)
+		{
+			printf(
+				"ADC %u\r\n"
+				"ID: 0x%02X\r\n"
+				"STATUS: 0x%02X\r\n"
+				"ERROR: 0x%04X\r\n",
+				(unsigned int)(i+1U),
+				/*ID: 0x05 - 0000 0101 */
+				(unsigned int)init_result[i].id,
+				/* STATUS (init): 0x90 - 1001 0000 or 0x10 - 0001 0000 */
+				(unsigned int)init_result[i].status,
+				/* ERROR: 0x0000 - 0000 0000 0000 0000 */
+				(unsigned int)init_result[i].error
+			);
+			if ((init_result[i].id != 0x05U) || (init_result[i].error != 0x0000U))
+			{
+				printf("Failed to initialize ADC %u\r\n", (unsigned int)(i+1U));
+				Error_Handler();
+			}
 
-	ADC2_Init();
-	printf("ADC2\r\n");
-	/*ID: 0x05 - 0000 0101 */
-	uint8_t id2 = ADC2_ReadID();
-	printf("ID: 0x%02X\r\n", id2);
-	/* STATUS (init): 0x90 - 1001 0000 or 0x10 - 0001 0000 */
-	uint8_t status2 = ADC2_Read_8_bit(AD4130_STATUS);
-	printf("STATUS: 0x%02X\r\n", status2);
-	/* ERROR: 0x0000 - 0000 0000 0000 0000 */
-	uint16_t error2 = ADC2_Read_16_bit(AD4130_ERROR);
-	printf("ERROR: 0x%04X\r\n", error2);
+			/* ADC_CONTROL: 0x2700 - 0010 0111 0000 0000 */
+			/* IO_CONTROL: 0x0000 - 0000 0000 0000 0000 */
+			/* VBIAS_CONTROL: 0x0000 - 0000 0000 0000 0000 */
+			/* ERROR_EN: 0x0078 - 0000 0000 0111 1000 */
 
-	ADC2_Config();
-	ADC2_Filter();
-	ADC2_Channel_0();
+		}
+		else
+		{
+			printf("Failed to initialize ADC %u\r\n", (unsigned int)(i+1U));
+			Error_Handler();
+		}
+	}
 
-	const float vref = 1.25f;
-	const float gain = 128.0f;
-	const float iout_0 = 10.0e-6f;
+	for (uint8_t i = 1; i < 2U; i++)
+	{
+		result = AD4130_Channel_0(i+1U);
+		if (result != HAL_OK)
+		{
+			printf("Failed to configure ADC %u channel 0\r\n", (unsigned int)(i+1U));
+			Error_Handler();
+		}
+	}
+
+	const float iout_0 = 100.0e-9f;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	while (1)
+	{
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		uint32_t data_status = ADC2_Read_32_bit(AD4130_DATA);
-		uint8_t status = data_status & 0xFFU;
-		uint32_t data = (data_status >> 8) & 0xFFFFFFU;
-		printf("STATUS: 0x%02X\r\n", status);
-		printf("DATA: 0x%06lX\r\n", (unsigned long)data);
-		if ((status & 0x80U) != 0U)
-		{
-			HAL_Delay(1);
-			continue;
-		}
+		uint32_t data_status = 0;
 
-		float voltage_0 = (float)data / 16777216.0f * vref / gain;
-		float resistance_0 = voltage_0 / iout_0;
-		float temperature_0 = resistance_to_temperature(resistance_0);
-		printf("Resistance: %.4f ohm\r\n", resistance_0);
-		printf("Temperature: %.5f K\r\n", temperature_0);
-		HAL_Delay(10000);
-  }
+		result = AD4130_Read_32_Bit(2U, AD4130_DATA, &data_status);
+		if (result == HAL_OK)
+		{
+			uint8_t status = 0;
+			uint32_t data = 0;
+
+			status = data_status & 0xFFU;
+			data = (data_status >> 8) & 0xFFFFFFU;
+			printf("STATUS: 0x%02X\r\n", (unsigned int)status);
+			printf("DATA: 0x%06lX\r\n", (unsigned long int)data);
+
+			if ((status & 0x80U) != 0U)
+			{
+				HAL_Delay(1);
+				continue;
+			}
+
+			float voltage_0 = (
+				(float)data / 16777216.0f
+				* init_result[1].vref / init_result[1].gain
+			);
+			float resistance_0 = voltage_0 / iout_0;
+			float temperature_0 = resistance_to_temperature(resistance_0);
+			printf("Resistance: %.4f ohm\r\n", (double)resistance_0);
+			printf("Temperature: %.5f K\r\n", (double)temperature_0);
+
+			HAL_Delay(10000);
+		}
+		else
+		{
+			printf("Failed to read ADC2 DATA\r\n");
+			Error_Handler();
+		}
+	}
   /* USER CODE END 3 */
 }
 
@@ -236,7 +269,10 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  printf("Wrong parameters value: file %s on line %lu\r\n", file, line);
+	printf(
+		"Wrong parameters value: file %s on line %lu\r\n",
+		(char *)file, (unsigned long int)line
+	);
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
