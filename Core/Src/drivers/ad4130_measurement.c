@@ -1,4 +1,4 @@
-#include "application/ad4130_measurement.h"
+#include "drivers/ad4130_measurement.h"
 
 HAL_StatusTypeDef AD4130_Read_Channel_0_Resistance(
 		uint8_t adc_device_id,

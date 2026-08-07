@@ -25,8 +25,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "bsp/ad4130.h"
-#include "application/ad4130_measurement.h"
+#include "drivers/ad4130.h"
+#include "drivers/ad4130_measurement.h"
 #include "application/sensor_fit.h"
 /* USER CODE END Includes */
 

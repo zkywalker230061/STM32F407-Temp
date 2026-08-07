@@ -1,4 +1,4 @@
-#include "bsp/ad4130.h"
+#include "drivers/ad4130.h"
 
 /* ------------------------------------------------------------------------ */
 
@@ -386,6 +386,8 @@ HAL_StatusTypeDef AD4130_Filter(uint8_t adc_device_id)
 
 	return HAL_OK;
 }
+
+/* ------------------------------------------------------------------------ */
 
 HAL_StatusTypeDef AD4130_Channel_0(
 		uint8_t adc_device_id,
