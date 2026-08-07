@@ -22,7 +22,7 @@ static AD4130Device_t ad4130_devices[2] = {
 	}
 };
 
-const float ad4130_iout_values[8] = {
+static const float ad4130_iout_values[8] = {
 	0.0f,
 	100.0e-9f,
 	10.0e-6f,

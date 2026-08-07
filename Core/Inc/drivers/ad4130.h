@@ -1,5 +1,5 @@
-#ifndef BSP_AD4130_H
-#define BSP_AD4130_H
+#ifndef AD4130_H
+#define AD4130_H
 
 #include <stdint.h>
 #include "spi.h"
@@ -20,8 +20,6 @@ typedef struct
 
 #define AD4130_VREF		1.25f
 #define AD4130_GAIN		128.0f
-
-extern const float ad4130_iout_values[8];
 
 typedef struct
 {
@@ -167,4 +165,4 @@ HAL_StatusTypeDef AD4130_Channel_0(
 }
 #endif
 
-#endif  /* BSP_AD4130_H */
+#endif  /* AD4130_H */
