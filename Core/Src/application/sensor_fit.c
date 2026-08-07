@@ -1,6 +1,7 @@
-#include "application/sensor_curves.h"
+#include "application/sensor_fit.h"
 
-typedef struct {
+typedef struct
+{
 	float z_min;  /* log10(R) lower bound (high temperature end) */
 	float z_max;  /* log10(R) upper bound (low temperature end) */
 	float r_left;  /* resistance near z_min */
@@ -12,25 +13,27 @@ typedef struct {
 
 #include "storage/sensor_coeffs.inc"
 
-float resistance_to_temperature(float resistance)
+int resistance_to_temperature(float resistance, float *temperature)
 {
-	if (resistance <= 0.0f)
+	if ((resistance <= 0.0f) || (temperature == NULL))
 	{
-		return TEMP_ERROR;
+		return SENSOR_FIT_PARAM_ERROR;
 	}
+	*temperature = 0.0f;
 
 	for (int i = 0; i < SEGMENT_COUNT; i++)
 	{
-		if (resistance >= segments[i].r_right
-				&& resistance < segments[i].r_left)
+		if (resistance >= segments[i].r_right && resistance < segments[i].r_left)
 		{
-			return chebychev_point(
+			*temperature = chebychev_point(
 					resistance,
 					segments[i].z_min, segments[i].z_max,
 					segments[i].coeffs, segments[i].order
-				);
+			);
+
+			return SENSOR_FIT_OK;
 		}
 	}
 
-	return TEMP_ERROR;
+	return SENSOR_FIT_RANGE_ERROR;
 }

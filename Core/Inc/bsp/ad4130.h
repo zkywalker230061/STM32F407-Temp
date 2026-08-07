@@ -16,12 +16,26 @@ typedef struct
 	uint8_t id;
 	uint8_t status;
 	uint16_t error;
-	float vref;
-	float gain;
 } AD4130InitResult_t;
 
 #define AD4130_VREF		1.25f
 #define AD4130_GAIN		128.0f
+
+extern const float ad4130_iout_values[8];
+
+typedef struct
+{
+	uint8_t level_1;
+	uint8_t level_2;
+	uint8_t level_3;
+	uint8_t level_4;
+
+	float i_1;
+	float i_2;
+	float i_3;
+	float i_4;
+} AD4130Iouts_t;
+extern AD4130Iouts_t ad4130_iouts[2];
 
 /* ------------------------------------------------------------------------ */
 
@@ -142,7 +156,10 @@ HAL_StatusTypeDef AD4130_Init(
 
 HAL_StatusTypeDef AD4130_Config(uint8_t adc_device_id);
 HAL_StatusTypeDef AD4130_Filter(uint8_t adc_device_id);
-HAL_StatusTypeDef AD4130_Channel_0(uint8_t adc_device_id);
+HAL_StatusTypeDef AD4130_Channel_0(
+		uint8_t adc_device_id,
+		uint8_t iout_level
+);
 
 /* ------------------------------------------------------------------------ */
 

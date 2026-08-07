@@ -1,0 +1,19 @@
+#ifndef AD4130_MEASUREMENT_H
+#define AD4130_MEASUREMENT_H
+
+#include "bsp/ad4130.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+HAL_StatusTypeDef AD4130_Read_Channel_0_Resistance(
+		uint8_t adc_device_id,
+		float *resistance
+);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  /* AD4130_MEASUREMENT_H */

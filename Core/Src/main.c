@@ -26,7 +26,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "bsp/ad4130.h"
-#include "application/sensor_curves.h"
+#include "application/ad4130_measurement.h"
+#include "application/sensor_fit.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -100,51 +101,48 @@ int main(void)
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Init(i+1U, &init_result[i]);
-		if (result == HAL_OK)
+		if (result != HAL_OK)
 		{
-			printf(
-				"ADC %u\r\n"
-				"ID: 0x%02X\r\n"
-				"STATUS: 0x%02X\r\n"
-				"ERROR: 0x%04X\r\n",
-				(unsigned int)(i+1U),
-				/*ID: 0x05 - 0000 0101 */
-				(unsigned int)init_result[i].id,
-				/* STATUS (init): 0x90 - 1001 0000 or 0x10 - 0001 0000 */
-				(unsigned int)init_result[i].status,
-				/* ERROR: 0x0000 - 0000 0000 0000 0000 */
-				(unsigned int)init_result[i].error
-			);
-			if ((init_result[i].id != 0x05U) || (init_result[i].error != 0x0000U))
-			{
-				printf("Failed to initialize ADC %u\r\n", (unsigned int)(i+1U));
-				Error_Handler();
-			}
-
-			/* ADC_CONTROL: 0x2700 - 0010 0111 0000 0000 */
-			/* IO_CONTROL: 0x0000 - 0000 0000 0000 0000 */
-			/* VBIAS_CONTROL: 0x0000 - 0000 0000 0000 0000 */
-			/* ERROR_EN: 0x0078 - 0000 0000 0111 1000 */
-
-		}
-		else
-		{
-			printf("Failed to initialize ADC %u\r\n", (unsigned int)(i+1U));
+			printf("ADC %u INIT incorrect\r\n", (unsigned int)(i+1U));
 			Error_Handler();
 		}
+
+		printf(
+			"ADC %u\r\n"
+			"ID: 0x%02X\r\n"
+			"STATUS: 0x%02X\r\n"
+			"ERROR: 0x%04X\r\n",
+			(unsigned int)(i+1U),
+			/*ID: 0x05 - 0000 0101 */
+			(unsigned int)init_result[i].id,
+			/* STATUS (init): 0x90 - 1001 0000 or 0x10 - 0001 0000 */
+			(unsigned int)init_result[i].status,
+			/* ERROR: 0x0000 - 0000 0000 0000 0000 */
+			(unsigned int)init_result[i].error
+		);
+
+		if ((init_result[i].id != 0x05U) || (init_result[i].error != 0x0000U))
+		{
+			printf("ADC %u ID or ERROR incorrect\r\n", (unsigned int)(i+1U));
+			Error_Handler();
+		}
+
+		/* ADC_CONTROL: 0x2700 - 0010 0111 0000 0000 */
+		/* IO_CONTROL: 0x0000 - 0000 0000 0000 0000 */
+		/* VBIAS_CONTROL: 0x0000 - 0000 0000 0000 0000 */
+		/* ERROR_EN: 0x0078 - 0000 0000 0111 1000 */
+
 	}
 
 	for (uint8_t i = 1; i < 2U; i++)
 	{
-		result = AD4130_Channel_0(i+1U);
+		result = AD4130_Channel_0(i+1U, 2U);  /* I_OUT0_0 */
 		if (result != HAL_OK)
 		{
-			printf("Failed to configure ADC %u channel 0\r\n", (unsigned int)(i+1U));
+			printf("ADC %u CHANNEL_0 setup incorrect\r\n", (unsigned int)(i+1U));
 			Error_Handler();
 		}
 	}
-
-	const float iout_0 = 100.0e-9f;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -154,40 +152,34 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		uint32_t data_status = 0;
-
-		result = AD4130_Read_32_Bit(2U, AD4130_DATA, &data_status);
-		if (result == HAL_OK)
+		for (uint8_t i = 1; i < 2U; i++)
 		{
-			uint8_t status = 0;
-			uint32_t data = 0;
+			int fit_result;
+			float r_2_1;
+			float temperature_2_1;
 
-			status = data_status & 0xFFU;
-			data = (data_status >> 8) & 0xFFFFFFU;
-			printf("STATUS: 0x%02X\r\n", (unsigned int)status);
-			printf("DATA: 0x%06lX\r\n", (unsigned long int)data);
-
-			if ((status & 0x80U) != 0U)
+			result = AD4130_Read_Channel_0_Resistance(i+1U, &r_2_1);
+			if (result == HAL_BUSY)
 			{
 				HAL_Delay(1);
 				continue;
 			}
+			if (result != HAL_OK)
+			{
+				printf("ADC %u CHANNEL_0 read incorrect\r\n", (unsigned int)(i+1U));
+				Error_Handler();
+			}
+			printf("Resistance: %.4f ohm\r\n", (double)r_2_1);
 
-			float voltage_0 = (
-				(float)data / 16777216.0f
-				* init_result[1].vref / init_result[1].gain
-			);
-			float resistance_0 = voltage_0 / iout_0;
-			float temperature_0 = resistance_to_temperature(resistance_0);
-			printf("Resistance: %.4f ohm\r\n", (double)resistance_0);
-			printf("Temperature: %.5f K\r\n", (double)temperature_0);
+			fit_result = resistance_to_temperature(r_2_1, &temperature_2_1);
+			if (fit_result != SENSOR_FIT_OK)
+			{
+				printf("ADC %u CHANNEL_0 fit incorrect\r\n", (unsigned int)(i+1U));
+				Error_Handler();
+			}
+			printf("Temperature: %.5f K\r\n", (double)temperature_2_1);
 
 			HAL_Delay(10000);
-		}
-		else
-		{
-			printf("Failed to read ADC2 DATA\r\n");
-			Error_Handler();
 		}
 	}
   /* USER CODE END 3 */
