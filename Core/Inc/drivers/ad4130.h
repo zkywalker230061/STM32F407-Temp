@@ -158,6 +158,18 @@ HAL_StatusTypeDef AD4130_Channel_0(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 );
+HAL_StatusTypeDef AD4130_Channel_1(
+		uint8_t adc_device_id,
+		uint8_t iout_level
+);
+HAL_StatusTypeDef AD4130_Channel_2(
+		uint8_t adc_device_id,
+		uint8_t iout_level
+);
+HAL_StatusTypeDef AD4130_Channel_3(
+		uint8_t adc_device_id,
+		uint8_t iout_level
+);
 
 /* ------------------------------------------------------------------------ */
 

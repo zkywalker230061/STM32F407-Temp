@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "dma.h"
 #include "spi.h"
 #include "usart.h"
 #include "usb_otg.h"
@@ -92,7 +91,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_USB_OTG_FS_PCD_Init();
@@ -136,7 +134,7 @@ int main(void)
 
 	}
 
-	for (uint8_t i = 1; i < 2U; i++)
+	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Channel_0(i+1U, 2U);  /* I_OUT0_0 */
 		if (result != HAL_OK)
@@ -154,13 +152,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		for (uint8_t i = 1; i < 2U; i++)
+		for (uint8_t i = 0; i < 2U; i++)
 		{
 			int fit_result;
-			float r_2_1;
-			float temperature_2_1;
+			float r_1;
+			float t_1;
 
-			result = AD4130_Read_Channel_0_Resistance(i+1U, &r_2_1);
+			result = AD4130_Read_Channel_0_Resistance(i+1U, &r_1);
 			if (result == HAL_BUSY)
 			{
 				HAL_Delay(1);
@@ -171,16 +169,19 @@ int main(void)
 				printf("ADC %u CHANNEL_0 read incorrect\r\n", (unsigned int)(i+1U));
 				Error_Handler();
 			}
-			printf("Resistance: %.4f ohm\r\n", (double)r_2_1);
 
-			fit_result = resistance_to_temperature(r_2_1, &temperature_2_1);
+			fit_result = resistance_to_temperature(r_1, &t_1);
 			if (fit_result != SENSOR_FIT_OK)
 			{
 				printf("ADC %u CHANNEL_0 fit incorrect\r\n", (unsigned int)(i+1U));
 				Error_Handler();
 			}
-			printf("Temperature: %.5f K\r\n", (double)temperature_2_1);
 
+			printf("%u-1: R-%.4f ohm, T-%.5f K\r\n",
+					(unsigned int)(i+1U),
+					(double)r_1,
+					(double)t_1
+			);
 			HAL_Delay(10000);
 		}
 	}

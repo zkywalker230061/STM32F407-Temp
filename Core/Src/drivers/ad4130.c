@@ -406,7 +406,7 @@ HAL_StatusTypeDef AD4130_Channel_0(
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
 	channel_0_val = (
-			0b100000000100001100000000
+			0b100000000100001100010000
 			| ((uint32_t)iout_level << 20)
 	);
 
@@ -422,6 +422,117 @@ HAL_StatusTypeDef AD4130_Channel_0(
 
 	ad4130_iouts[adc_device_id - 1U].level_1 = iout_level;
 	ad4130_iouts[adc_device_id - 1U].i_1 = ad4130_iout_values[iout_level];
+
+	return status;
+}
+
+HAL_StatusTypeDef AD4130_Channel_1(
+		uint8_t adc_device_id,
+		uint8_t iout_level
+)
+{
+	if (iout_level > 7U)
+	{
+		return HAL_ERROR;  /* Invalid I_OUT level */
+	}
+
+	HAL_StatusTypeDef status;
+	uint32_t channel_1_val;
+	uint8_t tx[3] = {0};
+
+	/* Bits 23,22-20,17-13,12-8,3-0 */
+	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
+	channel_1_val = (
+			0b100000001100011101010100
+			| ((uint32_t)iout_level << 20)
+	);
+
+	tx[0] = (channel_1_val >> 16) & 0xFFU;
+	tx[1] = (channel_1_val >> 8) & 0xFFU;
+	tx[2] = channel_1_val & 0xFFU;
+
+	status = AD4130_Write(adc_device_id, AD4130_CHANNEL_1, tx, 3U);
+	if (status != HAL_OK)
+	{
+		return status;
+	}
+
+	ad4130_iouts[adc_device_id - 1U].level_2 = iout_level;
+	ad4130_iouts[adc_device_id - 1U].i_2 = ad4130_iout_values[iout_level];
+
+	return status;
+}
+
+HAL_StatusTypeDef AD4130_Channel_2(
+		uint8_t adc_device_id,
+		uint8_t iout_level
+)
+{
+	if (iout_level > 7U)
+	{
+		return HAL_ERROR;  /* Invalid I_OUT level */
+	}
+
+	HAL_StatusTypeDef status;
+	uint32_t channel_2_val;
+	uint8_t tx[3] = {0};
+
+	/* Bits 23,22-20,17-13,12-8,3-0 */
+	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
+	channel_2_val = (
+			0b100000010100101110011000
+			| ((uint32_t)iout_level << 20)
+	);
+
+	tx[0] = (channel_2_val >> 16) & 0xFFU;
+	tx[1] = (channel_2_val >> 8) & 0xFFU;
+	tx[2] = channel_2_val & 0xFFU;
+
+	status = AD4130_Write(adc_device_id, AD4130_CHANNEL_2, tx, 3U);
+	if (status != HAL_OK)
+	{
+		return status;
+	}
+
+	ad4130_iouts[adc_device_id - 1U].level_3 = iout_level;
+	ad4130_iouts[adc_device_id - 1U].i_3 = ad4130_iout_values[iout_level];
+
+	return status;
+}
+
+HAL_StatusTypeDef AD4130_Channel_3(
+		uint8_t adc_device_id,
+		uint8_t iout_level
+)
+{
+	if (iout_level > 7U)
+	{
+		return HAL_ERROR;  /* Invalid I_OUT level */
+	}
+
+	HAL_StatusTypeDef status;
+	uint32_t channel_3_val;
+	uint8_t tx[3] = {0};
+
+	/* Bits 23,22-20,17-13,12-8,3-0 */
+	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
+	channel_3_val = (
+			0b100000011100111111011100
+			| ((uint32_t)iout_level << 20)
+	);
+
+	tx[0] = (channel_3_val >> 16) & 0xFFU;
+	tx[1] = (channel_3_val >> 8) & 0xFFU;
+	tx[2] = channel_3_val & 0xFFU;
+
+	status = AD4130_Write(adc_device_id, AD4130_CHANNEL_3, tx, 3U);
+	if (status != HAL_OK)
+	{
+		return status;
+	}
+
+	ad4130_iouts[adc_device_id - 1U].level_4 = iout_level;
+	ad4130_iouts[adc_device_id - 1U].i_4 = ad4130_iout_values[iout_level];
 
 	return status;
 }
