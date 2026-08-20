@@ -29,16 +29,4 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>FatFs</name>
-			<type>2</type>
-			<locationURI>PROJECT_LOC/FatFs</locationURI>
-		</link>
-		<link>
-			<name>USB_Device_Library</name>
-			<type>1</type>
-			<locationURI>PROJECT_LOC/USB_Device_Library</locationURI>
-		</link>
-	</linkedResources>
 </projectDescription>
