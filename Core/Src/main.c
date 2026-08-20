@@ -99,6 +99,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	HAL_StatusTypeDef result;
 	AD4130InitResult_t init_result[2] = {0};
+	float resistance[2][4] = {0};
+	float temperature[2][4] = {0};
 
 	for (uint8_t i = 0; i < 2U; i++)
 	{
@@ -144,6 +146,27 @@ int main(void)
 			printf("ADC %u CHANNEL_0 setup incorrect\r\n", (unsigned int)(i+1U));
 			Error_Handler();
 		}
+
+//		result = AD4130_Channel_1(i+1U, 2U);
+//		if (result != HAL_OK)
+//		{
+//			printf("ADC %u CHANNEL_1 setup incorrect\r\n", (unsigned int)(i+1U));
+//			Error_Handler();
+//		}
+//
+//		result = AD4130_Channel_2(i+1U, 2U);
+//		if (result != HAL_OK)
+//		{
+//			printf("ADC %u CHANNEL_2 setup incorrect\r\n", (unsigned int)(i+1U));
+//			Error_Handler();
+//		}
+//
+//		result = AD4130_Channel_3(i+1U, 2U);
+//		if (result != HAL_OK)
+//		{
+//			printf("ADC %u CHANNEL_3 setup incorrect\r\n", (unsigned int)(i+1U));
+//			Error_Handler();
+//		}
 	}
   /* USER CODE END 2 */
 
@@ -156,11 +179,12 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		for (uint8_t i = 0; i < 2U; i++)
 		{
+			uint8_t channel;
 			int fit_result;
-			float r_1;
-			float t_1;
+			float measured_resistance;
+			float measured_temperature;
 
-			result = AD4130_Read_Channel_0_Resistance(i+1U, &r_1);
+			result = AD4130_Read_Resistance(i+1U, &channel, &measured_resistance);
 			if (result == HAL_BUSY)
 			{
 				HAL_Delay(1);
@@ -168,23 +192,35 @@ int main(void)
 			}
 			if (result != HAL_OK)
 			{
-				printf("ADC %u CHANNEL_0 read incorrect\r\n", (unsigned int)(i+1U));
+				printf("ADC %u read incorrect\r\n", (unsigned int)(i+1U));
 				Error_Handler();
 			}
 
-			fit_result = resistance_to_temperature(r_1, &t_1);
+			fit_result = resistance_to_temperature(
+					measured_resistance,
+					&measured_temperature
+			);
 			if (fit_result != SENSOR_FIT_OK)
 			{
-				printf("ADC %u CHANNEL_0 fit incorrect\r\n", (unsigned int)(i+1U));
+				printf(
+						"ADC %u CHANNEL_%u fit incorrect\r\n",
+						(unsigned int)(i+1U),
+						(unsigned int)channel
+				);
 				Error_Handler();
 			}
 
-			printf("%u-1: R-%.4f ohm, T-%.5f K\r\n",
+			resistance[i][channel] = measured_resistance;
+			temperature[i][channel] = measured_temperature;
+
+			printf(
+					"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
 					(unsigned int)(i+1U),
-					(double)r_1,
-					(double)t_1
+					(unsigned int)(channel+1U),
+					(double)resistance[i][channel],
+					(double)temperature[i][channel]
 			);
-			HAL_Delay(10000);
+			HAL_Delay(1000);
 		}
 	}
   /* USER CODE END 3 */

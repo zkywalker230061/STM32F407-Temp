@@ -11,8 +11,9 @@ static HAL_StatusTypeDef AD4130_Get_Autorange_Level(
 		uint8_t *new_level
 );
 
-HAL_StatusTypeDef AD4130_Read_Channel_0_Resistance(
+HAL_StatusTypeDef AD4130_Read_Resistance(
 		uint8_t adc_device_id,
+		uint8_t *channel,
 		float *resistance
 )
 {
@@ -20,16 +21,19 @@ HAL_StatusTypeDef AD4130_Read_Channel_0_Resistance(
 	uint32_t data_status = 0;
 	uint32_t data = 0;
 	uint8_t status = 0;
-	uint8_t channel;
 	float iout;
 	float voltage;
 	uint8_t iout_level;
 	uint8_t new_iout_level;
 
-	if ((adc_device_id < 1U) || (adc_device_id > 2U) || (resistance == NULL))
+	if (
+			(adc_device_id < 1U) || (adc_device_id > 2U)
+			|| (channel == NULL) || (resistance == NULL)
+	)
 	{
 		return HAL_ERROR;
 	}
+	*channel = 0xFFU;
 	*resistance = 0.0f;
 
 	result = AD4130_Read_32_Bit(adc_device_id, AD4130_DATA, &data_status);
@@ -49,13 +53,38 @@ HAL_StatusTypeDef AD4130_Read_Channel_0_Resistance(
 		return HAL_ERROR;
 	}
 
-	channel = status & 0x0FU;
-	if (channel != 0U)
+	*channel = status & 0x0FU;
+	if (*channel > 3U)
 	{
 		return HAL_ERROR;
 	}
 
-	iout = ad4130_iouts[adc_device_id - 1U].i_1;
+	switch (*channel)
+	{
+		case 0U:
+			iout = ad4130_iouts[adc_device_id - 1U].i_1;
+			iout_level = ad4130_iouts[adc_device_id - 1U].level_1;
+			break;
+
+		case 1U:
+			iout = ad4130_iouts[adc_device_id - 1U].i_2;
+			iout_level = ad4130_iouts[adc_device_id - 1U].level_2;
+			break;
+
+		case 2U:
+			iout = ad4130_iouts[adc_device_id - 1U].i_3;
+			iout_level = ad4130_iouts[adc_device_id - 1U].level_3;
+			break;
+
+		case 3U:
+			iout = ad4130_iouts[adc_device_id - 1U].i_4;
+			iout_level = ad4130_iouts[adc_device_id - 1U].level_4;
+			break;
+
+		default:
+			return HAL_ERROR;
+	}
+
 	if (iout <= 0.0f)
 	{
 		return HAL_ERROR;
@@ -68,7 +97,6 @@ HAL_StatusTypeDef AD4130_Read_Channel_0_Resistance(
 
 	*resistance = voltage / iout;
 
-	iout_level = ad4130_iouts[adc_device_id - 1U].level_1;
 	new_iout_level = iout_level;
 	result = AD4130_Get_Autorange_Level(iout_level, data, &new_iout_level);
 	if (result != HAL_OK)
@@ -78,7 +106,28 @@ HAL_StatusTypeDef AD4130_Read_Channel_0_Resistance(
 
 	if (new_iout_level != iout_level)
 	{
-		result = AD4130_Channel_0(adc_device_id, new_iout_level);
+		switch (*channel)
+		{
+			case 0U:
+				result = AD4130_Channel_0(adc_device_id, new_iout_level);
+				break;
+
+			case 1U:
+				result = AD4130_Channel_1(adc_device_id, new_iout_level);
+				break;
+
+			case 2U:
+				result = AD4130_Channel_2(adc_device_id, new_iout_level);
+				break;
+
+			case 3U:
+				result = AD4130_Channel_3(adc_device_id, new_iout_level);
+				break;
+
+			default:
+				return HAL_ERROR;
+		}
+
 		if (result != HAL_OK)
 		{
 			return result;

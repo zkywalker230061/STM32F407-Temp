@@ -7,8 +7,9 @@
 extern "C" {
 #endif
 
-HAL_StatusTypeDef AD4130_Read_Channel_0_Resistance(
+HAL_StatusTypeDef AD4130_Read_Resistance(
 		uint8_t adc_device_id,
+		uint8_t *channel,
 		float *resistance
 );
 
