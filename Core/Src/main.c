@@ -26,6 +26,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "communication/sensor_coeffs_transfer.h"
+#include "storage/sensor_coeffs_decoder.h"
 #include "drivers/ad4130.h"
 #include "drivers/ad4130_measurement.h"
 #include "application/sensor_fit.h"
