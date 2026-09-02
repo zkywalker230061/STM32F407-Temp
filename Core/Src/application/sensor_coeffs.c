@@ -62,6 +62,12 @@ int sensor_coeffs_initialize(void)
 			}
 
 			sensor_curve_valid[adc_device_id - 1U][channel_id] = 1U;
+			printf(
+					"ADC %u CHANNEL_%u: %u segments loaded\r\n",
+					(unsigned int)adc_device_id,
+					(unsigned int)channel_id,
+					(unsigned int)sensor_curves[adc_device_id - 1U][channel_id].segment_count
+			);
 		}
 	}
 
