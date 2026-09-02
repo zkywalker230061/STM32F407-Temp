@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "dma.h"
+#include "rtc.h"
 #include "spi.h"
 #include "usart.h"
 #include "usb_device.h"
@@ -28,6 +29,7 @@
 /* USER CODE BEGIN Includes */
 #include "communication/sensor_coeffs_transfer.h"
 #include "storage/sensor_coeffs_decoder.h"
+#include "storage/sensor_coeffs_storage.h"
 #include "drivers/ad4130.h"
 #include "drivers/ad4130_measurement.h"
 #include "application/sensor_fit.h"
@@ -98,11 +100,13 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_USB_DEVICE_Init();
+  MX_RTC_Init();
   /* USER CODE BEGIN 2 */
+
+	/* -------------------------------------------------------------------- */
+
 	HAL_StatusTypeDef result;
 	AD4130InitResult_t init_result[2] = {0};
-	float resistance[2][4] = {0};
-	float temperature[2][4] = {0};
 	uint8_t adc_device_id;
 	uint8_t channel_id;
 	const uint8_t *binary_data;
@@ -110,6 +114,52 @@ int main(void)
 	Curve_t *received_curve;
 	int transfer_result;
 	int decode_result;
+	int storage_result;
+	float resistance[2][4] = {0};
+	float temperature[2][4] = {0};
+
+	/* -------------------------------------------------------------------- */
+
+	/* storage load */
+	storage_result = Sensor_Coeffs_Storage_Load(
+			&adc_device_id,
+			&channel_id,
+			&binary_data,
+			&binary_length
+	);
+	if (storage_result == SENSOR_COEFFS_STORAGE_OK)
+	{
+		/* decode */
+		received_curve = &sensor_curves[adc_device_id - 1U][channel_id];
+		decode_result = Sensor_Coeffs_Decode(
+				binary_data,
+				binary_length,
+				received_curve
+		);
+		if (decode_result != SENSOR_COEFFS_DECODE_OK)
+		{
+			printf(
+					"Stored sensor coefficients decode error: %d\r\n",
+					decode_result
+			);
+		}
+		else
+		{
+			printf(
+					"ADC %u CHANNEL_%u: %u segments loaded\r\n",
+					(unsigned int)adc_device_id,
+					(unsigned int)channel_id,
+					(unsigned int)received_curve->segment_count
+			);
+		}
+	}
+	else if (storage_result != SENSOR_COEFFS_STORAGE_NOT_FOUND)
+	{
+		printf(
+				"Sensor coefficients storage load error: %d\r\n",
+				storage_result
+		);
+	}
 
 	for (uint8_t i = 0; i < 2U; i++)
 	{
@@ -177,6 +227,9 @@ int main(void)
 //			Error_Handler();
 //		}
 	}
+
+	/* -------------------------------------------------------------------- */
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -186,6 +239,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+		/* transfer */
 		transfer_result = Sensor_Coeffs_Transfer_Get_Data(
 				&adc_device_id,
 				&channel_id,
@@ -194,40 +249,47 @@ int main(void)
 		);
 		if (transfer_result == SENSOR_COEFFS_TRANSFER_OK)
 		{
+			/* decode */
 			received_curve = &sensor_curves[adc_device_id - 1U][channel_id];
 			decode_result = Sensor_Coeffs_Decode(
 					binary_data,
 					binary_length,
 					received_curve
 			);
-			if (decode_result == SENSOR_COEFFS_DECODE_OK)
-			{
-				printf(
-						"ADC %u CHANNEL_%u: %u segments received\r\n",
-						(unsigned int)adc_device_id,
-						(unsigned int)channel_id,
-						(unsigned int)received_curve->segment_count
-				);
-				/* TEMPORARY */
-				for (uint8_t adc = 0; adc < 2U; adc++)
-				{
-					for (uint8_t channel = 0; channel < 4U; channel++)
-					{
-						sensor_curves[adc][channel] = *received_curve;
-					}
-				}
-				/* TEMPORARY */
-			}
-			else
+			if (decode_result != SENSOR_COEFFS_DECODE_OK)
 			{
 				printf(
 						"Sensor coefficients decode error: %d\r\n",
 						decode_result
 				);
+				Sensor_Coeffs_Transfer_Reset();
+				continue;
 			}
 
-			Sensor_Coeffs_Transfer_Reset();
-			continue;
+			/* storage save */
+			storage_result = Sensor_Coeffs_Storage_Save(
+					adc_device_id,
+					channel_id,
+					binary_data,
+					binary_length
+			);
+			if (storage_result != SENSOR_COEFFS_STORAGE_OK)
+			{
+				printf(
+						"Sensor coefficients storage save error: %d\r\n",
+						storage_result
+				);
+				Sensor_Coeffs_Transfer_Reset();
+				continue;
+			}
+
+			printf(
+					"ADC %u CHANNEL_%u: %u segments saved\r\n",
+					(unsigned int)adc_device_id,
+					(unsigned int)channel_id,
+					(unsigned int)received_curve->segment_count
+			);
+			NVIC_SystemReset();
 		}
 		if (transfer_result != SENSOR_COEFFS_TRANSFER_NOT_READY)
 		{
@@ -305,8 +367,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 8;
