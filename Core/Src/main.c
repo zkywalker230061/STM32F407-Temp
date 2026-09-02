@@ -66,64 +66,7 @@ static int read_sensor(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static int read_sensor(void)
-{
-	HAL_StatusTypeDef result;
-	uint8_t channel;
-	int fit_result;
-	float measured_resistance;
-	float measured_temperature;
 
-	for (uint8_t i = 0; i < 2U; i++)
-	{
-		result = AD4130_Read_Resistance(i+1U, &channel, &measured_resistance);
-		if (result == HAL_BUSY)
-		{
-			HAL_Delay(1);
-			continue;
-		}
-		if (result != HAL_OK)
-		{
-			printf(
-					"ADC %u read incorrect: %d\r\n",
-					(unsigned int)(i+1U),
-					(int)result
-			);
-			return SENSOR_READ_ADC_ERROR;
-		}
-
-		/* sensor_fit: temperature fit */
-		fit_result = resistance_to_temperature(
-				measured_resistance,
-				sensor_coeffs_get_curve(i+1U, channel),
-				&measured_temperature
-		);
-		if (fit_result != SENSOR_FIT_OK)
-		{
-			printf(
-					"ADC %u CHANNEL_%u fit incorrect: %d\r\n",
-					(unsigned int)(i+1U),
-					(unsigned int)channel,
-					fit_result
-			);
-			return SENSOR_READ_FIT_ERROR;
-		}
-
-		resistance[i][channel] = measured_resistance;
-		temperature[i][channel] = measured_temperature;
-
-		printf(
-				"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
-				(unsigned int)(i+1U),
-				(unsigned int)(channel+1U),
-				(double)resistance[i][channel],
-				(double)temperature[i][channel]
-		);
-		HAL_Delay(1000);
-	}
-
-	return SENSOR_READ_OK;
-}
 /* USER CODE END 0 */
 
 /**
@@ -260,7 +203,64 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+static int read_sensor(void)
+{
+	HAL_StatusTypeDef result;
+	uint8_t channel;
+	int fit_result;
+	float measured_resistance;
+	float measured_temperature;
 
+	for (uint8_t i = 0; i < 2U; i++)
+	{
+		result = AD4130_Read_Resistance(i+1U, &channel, &measured_resistance);
+		if (result == HAL_BUSY)
+		{
+			HAL_Delay(1);
+			continue;
+		}
+		if (result != HAL_OK)
+		{
+			printf(
+					"ADC %u read incorrect: %d\r\n",
+					(unsigned int)(i+1U),
+					(int)result
+			);
+			return SENSOR_READ_ADC_ERROR;
+		}
+
+		/* sensor_fit: temperature fit */
+		fit_result = resistance_to_temperature(
+				measured_resistance,
+				sensor_coeffs_get_curve(i+1U, channel),
+				&measured_temperature
+		);
+		if (fit_result != SENSOR_FIT_OK)
+		{
+			printf(
+					"ADC %u CHANNEL_%u fit incorrect: %d\r\n",
+					(unsigned int)(i+1U),
+					(unsigned int)channel,
+					fit_result
+			);
+			return SENSOR_READ_FIT_ERROR;
+		}
+
+		resistance[i][channel] = measured_resistance;
+		temperature[i][channel] = measured_temperature;
+
+		printf(
+				"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
+				(unsigned int)(i+1U),
+				(unsigned int)(channel+1U),
+				(double)resistance[i][channel],
+				(double)temperature[i][channel]
+		);
+		HAL_Delay(1000);
+	}
+
+	return SENSOR_READ_OK;
+}
 /* USER CODE END 4 */
 
 /**
