@@ -16,6 +16,7 @@ extern "C" {
 #define SENSOR_COEFFS_STORAGE_ERASE_ERROR  -3
 #define SENSOR_COEFFS_STORAGE_WRITE_ERROR  -4
 #define SENSOR_COEFFS_STORAGE_VERIFY_ERROR -5
+#define SENSOR_COEFFS_STORAGE_FULL_ERROR   -6
 
 int Sensor_Coeffs_Storage_Save(
 		uint8_t adc_device_id,
@@ -25,8 +26,8 @@ int Sensor_Coeffs_Storage_Save(
 );
 
 int Sensor_Coeffs_Storage_Load(
-		uint8_t *adc_device_id,
-		uint8_t *channel_id,
+		uint8_t adc_device_id,
+		uint8_t channel_id,
 		const uint8_t **binary_data,
 		uint32_t *binary_length
 );

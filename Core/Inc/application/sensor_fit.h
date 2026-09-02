@@ -34,7 +34,11 @@ typedef struct
 	uint16_t segment_count;
 } Curve_t;
 
-int resistance_to_temperature(float resistance, float *temperature);
+int resistance_to_temperature(
+		float resistance,
+		const Curve_t *curve,
+		float *temperature
+);
 
 #ifdef __cplusplus
 }

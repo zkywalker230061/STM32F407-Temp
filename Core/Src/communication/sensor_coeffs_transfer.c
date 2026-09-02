@@ -15,6 +15,7 @@ static uint8_t sensor_coeffs_transfer_buffer[
 static uint32_t sensor_coeffs_received_length;
 static volatile uint32_t sensor_coeffs_binary_length;
 static volatile uint8_t sensor_coeffs_transfer_state;
+static volatile int sensor_coeffs_transfer_error;
 
 static uint32_t Sensor_Coeffs_Transfer_Read_32_Bit(const uint8_t *data)
 {
@@ -50,6 +51,7 @@ int Sensor_Coeffs_Transfer_Receive(
 	);
 	if (length > remaining_length)
 	{
+		sensor_coeffs_transfer_error = SENSOR_COEFFS_TRANSFER_LENGTH_ERROR;
 		sensor_coeffs_transfer_state = SENSOR_COEFFS_TRANSFER_ERROR;
 		return SENSOR_COEFFS_TRANSFER_LENGTH_ERROR;
 	}
@@ -77,6 +79,7 @@ int Sensor_Coeffs_Transfer_Receive(
 			|| (sensor_coeffs_transfer_buffer[7] != 0U)
 	)
 	{
+		sensor_coeffs_transfer_error = SENSOR_COEFFS_TRANSFER_FORMAT_ERROR;
 		sensor_coeffs_transfer_state = SENSOR_COEFFS_TRANSFER_ERROR;
 		return SENSOR_COEFFS_TRANSFER_FORMAT_ERROR;
 	}
@@ -89,6 +92,7 @@ int Sensor_Coeffs_Transfer_Receive(
 			|| (sensor_coeffs_binary_length > SENSOR_COEFFS_BINARY_MAX_SIZE)
 	)
 	{
+		sensor_coeffs_transfer_error = SENSOR_COEFFS_TRANSFER_LENGTH_ERROR;
 		sensor_coeffs_transfer_state = SENSOR_COEFFS_TRANSFER_ERROR;
 		return SENSOR_COEFFS_TRANSFER_LENGTH_ERROR;
 	}
@@ -99,6 +103,7 @@ int Sensor_Coeffs_Transfer_Receive(
 	);
 	if (sensor_coeffs_received_length > expected_length)
 	{
+		sensor_coeffs_transfer_error = SENSOR_COEFFS_TRANSFER_LENGTH_ERROR;
 		sensor_coeffs_transfer_state = SENSOR_COEFFS_TRANSFER_ERROR;
 		return SENSOR_COEFFS_TRANSFER_LENGTH_ERROR;
 	}
@@ -135,7 +140,7 @@ int Sensor_Coeffs_Transfer_Get_Data(
 
 	if (sensor_coeffs_transfer_state == SENSOR_COEFFS_TRANSFER_ERROR)
 	{
-		return SENSOR_COEFFS_TRANSFER_STATE_ERROR;
+		return sensor_coeffs_transfer_error;
 	}
 
 	if (sensor_coeffs_transfer_state != SENSOR_COEFFS_TRANSFER_READY)
@@ -157,6 +162,7 @@ void Sensor_Coeffs_Transfer_Reset(void)
 {
 	sensor_coeffs_received_length = 0U;
 	sensor_coeffs_binary_length = 0U;
+	sensor_coeffs_transfer_error = SENSOR_COEFFS_TRANSFER_OK;
 	sensor_coeffs_transfer_state = SENSOR_COEFFS_TRANSFER_RECEIVING;
 }
 
