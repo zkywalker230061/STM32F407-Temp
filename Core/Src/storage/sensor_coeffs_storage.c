@@ -192,8 +192,7 @@ int Sensor_Coeffs_Storage_Load(
 
 	if (
 			(binary_data == NULL) || (binary_length == NULL)
-			|| (adc_device_id < 1U) || (adc_device_id > 2U)
-			|| (channel_id > 3U)
+			|| (adc_device_id < 1U) || (adc_device_id > 2U) || (channel_id > 3U)
 	)
 	{
 		return SENSOR_COEFFS_STORAGE_PARAM_ERROR;
