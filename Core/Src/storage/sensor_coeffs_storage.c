@@ -7,9 +7,6 @@
 #define SENSOR_COEFFS_STORAGE_RECORD_SIZE	360U
 #define SENSOR_COEFFS_STORAGE_RECORD_COUNT	364U
 
-#define SENSOR_COEFFS_BINARY_MIN_SIZE		36U
-#define SENSOR_COEFFS_BINARY_MAX_SIZE		348U
-
 static HAL_StatusTypeDef Sensor_Coeffs_Storage_Write_Word(
 		uint32_t address,
 		uint32_t data
@@ -255,6 +252,34 @@ int Sensor_Coeffs_Storage_Load(
 	if (*binary_data == NULL)
 	{
 		return SENSOR_COEFFS_STORAGE_NOT_FOUND;
+	}
+
+	return SENSOR_COEFFS_STORAGE_OK;
+}
+
+int Sensor_Coeffs_Storage_Erase(void)
+{
+	FLASH_EraseInitTypeDef erase_init;
+	HAL_StatusTypeDef status;
+	uint32_t sector_error;
+
+	erase_init.TypeErase = FLASH_TYPEERASE_SECTORS;
+	erase_init.Sector = SENSOR_COEFFS_STORAGE_SECTOR;
+	erase_init.NbSectors = 1U;
+	erase_init.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+
+	status = HAL_FLASH_Unlock();
+	if (status != HAL_OK)
+	{
+		return SENSOR_COEFFS_STORAGE_ERASE_ERROR;
+	}
+
+	status = HAL_FLASHEx_Erase(&erase_init, &sector_error);
+	HAL_FLASH_Lock();
+
+	if (status != HAL_OK)
+	{
+		return SENSOR_COEFFS_STORAGE_ERASE_ERROR;
 	}
 
 	return SENSOR_COEFFS_STORAGE_OK;

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "application/sensor_fit.h"
+#include "storage/sensor_coeffs_format.h"
 
 #ifdef __cplusplus
 extern "C" {

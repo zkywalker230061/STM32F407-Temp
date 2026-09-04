@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
+#include "storage/sensor_coeffs_format.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,6 +32,8 @@ int Sensor_Coeffs_Storage_Load(
 		const uint8_t **binary_data,
 		uint32_t *binary_length
 );
+
+int Sensor_Coeffs_Storage_Erase(void);
 
 #ifdef __cplusplus
 }

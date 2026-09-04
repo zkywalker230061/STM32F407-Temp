@@ -1,11 +1,5 @@
 #include "storage/sensor_coeffs_decoder.h"
 
-#define SENSOR_COEFFS_VERSION				1U
-#define SENSOR_COEFFS_HEADER_SIZE			8U
-#define SENSOR_COEFFS_CRC_SIZE				4U
-#define SENSOR_COEFFS_SEGMENT_HEADER_SIZE	20U
-#define SENSOR_COEFFS_FLOAT_SIZE			4U
-
 static uint16_t Sensor_Coeffs_Read_16_Bit(const uint8_t *data)
 {
 	return (
@@ -96,11 +90,16 @@ int Sensor_Coeffs_Decode(
 		return SENSOR_COEFFS_DECODE_PARAM_ERROR;
 	}
 
-	if (length < (SENSOR_COEFFS_HEADER_SIZE + SENSOR_COEFFS_CRC_SIZE))
+	if (
+			length < (
+					SENSOR_COEFFS_FORMAT_HEADER_SIZE
+					+ SENSOR_COEFFS_FORMAT_CRC_SIZE
+			)
+	)
 	{
 		return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
 	}
-	data_length = length - SENSOR_COEFFS_CRC_SIZE;
+	data_length = length - SENSOR_COEFFS_FORMAT_CRC_SIZE;
 
 	if (
 			(data[0] != 'S') || (data[1] != 'C')
@@ -111,13 +110,16 @@ int Sensor_Coeffs_Decode(
 	}
 
 	version = Sensor_Coeffs_Read_16_Bit(&data[4]);
-	if (version != SENSOR_COEFFS_VERSION)
+	if (version != SENSOR_COEFFS_FORMAT_VERSION)
 	{
 		return SENSOR_COEFFS_DECODE_VERSION_ERROR;
 	}
 
 	segment_count = Sensor_Coeffs_Read_16_Bit(&data[6]);
-	if ((segment_count == 0U) || (segment_count > SENSOR_FIT_MAX_SEGMENTS))
+	if (
+			(segment_count == 0U)
+			|| (segment_count > SENSOR_COEFFS_FORMAT_MAX_SEGMENTS)
+	)
 	{
 		return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
 	}
@@ -129,7 +131,7 @@ int Sensor_Coeffs_Decode(
 		return SENSOR_COEFFS_DECODE_CRC_ERROR;
 	}
 
-	read_position = SENSOR_COEFFS_HEADER_SIZE;
+	read_position = SENSOR_COEFFS_FORMAT_HEADER_SIZE;
 	decoded_curve.segment_count = segment_count;
 
 	for (uint16_t i = 0; i < segment_count; i++)
@@ -141,7 +143,7 @@ int Sensor_Coeffs_Decode(
 		if (
 				Sensor_Coeffs_Check_Length(
 						data_length, read_position,
-						SENSOR_COEFFS_SEGMENT_HEADER_SIZE
+						SENSOR_COEFFS_FORMAT_SEGMENT_HEADER_SIZE
 				) == 0
 		)
 		{
@@ -150,22 +152,24 @@ int Sensor_Coeffs_Decode(
 
 		segment = &decoded_curve.segments[i];
 		segment->z_min = Sensor_Coeffs_Read_Float(&data[read_position]);
-		read_position += SENSOR_COEFFS_FLOAT_SIZE;
+		read_position += SENSOR_COEFFS_FORMAT_FLOAT_SIZE;
 		segment->z_max = Sensor_Coeffs_Read_Float(&data[read_position]);
-		read_position += SENSOR_COEFFS_FLOAT_SIZE;
+		read_position += SENSOR_COEFFS_FORMAT_FLOAT_SIZE;
 		segment->r_left = Sensor_Coeffs_Read_Float(&data[read_position]);
-		read_position += SENSOR_COEFFS_FLOAT_SIZE;
+		read_position += SENSOR_COEFFS_FORMAT_FLOAT_SIZE;
 		segment->r_right = Sensor_Coeffs_Read_Float(&data[read_position]);
-		read_position += SENSOR_COEFFS_FLOAT_SIZE;
+		read_position += SENSOR_COEFFS_FORMAT_FLOAT_SIZE;
 		order = Sensor_Coeffs_Read_32_Bit(&data[read_position]);
 		read_position += sizeof(order);
 
-		if (order > SENSOR_FIT_MAX_ORDER)
+		if (order > SENSOR_COEFFS_FORMAT_MAX_ORDER)
 		{
 			return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
 		}
 
-		coefficient_size = (order + 1U) * SENSOR_COEFFS_FLOAT_SIZE;
+		coefficient_size = (
+				(order + 1U) * SENSOR_COEFFS_FORMAT_FLOAT_SIZE
+		);
 		if (
 				Sensor_Coeffs_Check_Length(
 						data_length, read_position, coefficient_size
@@ -180,7 +184,7 @@ int Sensor_Coeffs_Decode(
 			segment->coeffs[coefficient] = Sensor_Coeffs_Read_Float(
 					&data[read_position]
 			);
-			read_position += SENSOR_COEFFS_FLOAT_SIZE;
+			read_position += SENSOR_COEFFS_FORMAT_FLOAT_SIZE;
 		}
 
 		segment->order = (int)order;

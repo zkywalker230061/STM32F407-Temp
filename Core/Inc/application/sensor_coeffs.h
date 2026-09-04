@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "communication/sensor_coeffs_transfer.h"
 #include "storage/sensor_coeffs_decoder.h"
+#include "storage/sensor_coeffs_format.h"
 #include "storage/sensor_coeffs_storage.h"
 
 #ifdef __cplusplus

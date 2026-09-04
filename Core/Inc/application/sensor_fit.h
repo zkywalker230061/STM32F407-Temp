@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <math.h>
 #include "application/chebychev.h"
+#include "storage/sensor_coeffs_format.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,10 +14,6 @@ extern "C" {
 #define SENSOR_FIT_PARAM_ERROR -1
 #define SENSOR_FIT_RANGE_ERROR -2
 
-#define SENSOR_FIT_MAX_SEGMENTS		4
-#define SENSOR_FIT_MAX_ORDER		15
-#define SENSOR_FIT_COEFF_COUNT		(SENSOR_FIT_MAX_ORDER + 1)
-
 typedef struct
 {
 	float z_min;  /* log10(R) lower bound (high temperature end) */
@@ -24,13 +21,13 @@ typedef struct
 	float r_left;  /* resistance near z_min */
 	float r_right;  /* resistance near z_max */
 	/* Temperature relationship: z_max(r) < r_left < r_right < z_min(r) */
-	float coeffs[SENSOR_FIT_COEFF_COUNT];
+	float coeffs[SENSOR_COEFFS_FORMAT_COEFF_COUNT];
 	int order;
 } CurveSegment_t;
 
 typedef struct
 {
-	CurveSegment_t segments[SENSOR_FIT_MAX_SEGMENTS];
+	CurveSegment_t segments[SENSOR_COEFFS_FORMAT_MAX_SEGMENTS];
 	uint16_t segment_count;
 } Curve_t;
 
