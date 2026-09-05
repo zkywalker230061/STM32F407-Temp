@@ -140,6 +140,7 @@ int sensor_coeffs_process(void)
 	);
 	if (storage_result == SENSOR_COEFFS_STORAGE_FULL_ERROR)
 	{
+		/* compact flash */
 		compact_result = sensor_coeffs_compact_flash();
 		if (compact_result != SENSOR_COEFFS_OK)
 		{
