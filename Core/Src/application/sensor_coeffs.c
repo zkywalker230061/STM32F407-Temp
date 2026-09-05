@@ -290,6 +290,7 @@ static int sensor_coeffs_compact_flash(void)
 	int result;
 	int storage_result;
 
+	/* copy flash to ram */
 	result = sensor_coeffs_copy_flash_to_ram();
 	if (result != SENSOR_COEFFS_OK)
 	{
