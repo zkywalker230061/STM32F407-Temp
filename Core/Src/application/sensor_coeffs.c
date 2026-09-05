@@ -297,6 +297,7 @@ static int sensor_coeffs_compact_flash(void)
 		return result;
 	}
 
+	/* erase flash */
 	storage_result = Sensor_Coeffs_Storage_Erase();
 	if (storage_result != SENSOR_COEFFS_STORAGE_OK)
 	{
