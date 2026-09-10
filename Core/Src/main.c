@@ -18,9 +18,9 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "dma.h"
 #include "rtc.h"
 #include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "usb_device.h"
 #include "gpio.h"
@@ -41,6 +41,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define SENSOR_READ_OK         0
+#define SENSOR_READ_NOT_READY  1
 #define SENSOR_READ_ADC_ERROR -1
 #define SENSOR_READ_FIT_ERROR -2
 
@@ -98,11 +99,11 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_USB_DEVICE_Init();
   MX_RTC_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
 	int adc_result;
@@ -147,7 +148,10 @@ int main(void)
 
 		/* ADC read */
 		read_result = read_sensor();
-		if (read_result != SENSOR_READ_OK)
+		if (
+				(read_result != SENSOR_READ_OK)
+				&& (read_result != SENSOR_READ_NOT_READY)
+		)
 		{
 			Error_Handler();
 		}
@@ -210,13 +214,13 @@ static int read_sensor(void)
 	int fit_result;
 	float measured_resistance;
 	float measured_temperature;
+	uint8_t read_count = 0U;
 
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Read_Resistance(i+1U, &channel, &measured_resistance);
 		if (result == HAL_BUSY)
 		{
-			HAL_Delay(1);
 			continue;
 		}
 		if (result != HAL_OK)
@@ -248,6 +252,7 @@ static int read_sensor(void)
 
 		resistance[i][channel] = measured_resistance;
 		temperature[i][channel] = measured_temperature;
+		read_count++;
 
 		printf(
 				"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
@@ -256,7 +261,12 @@ static int read_sensor(void)
 				(double)resistance[i][channel],
 				(double)temperature[i][channel]
 		);
-		HAL_Delay(1000);
+		/* HAL_Delay(1000); */
+	}
+
+	if (read_count == 0U)
+	{
+		return SENSOR_READ_NOT_READY;
 	}
 
 	return SENSOR_READ_OK;
