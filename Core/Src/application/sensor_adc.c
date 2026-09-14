@@ -44,6 +44,8 @@ int sensor_adc_initialize(void)
 		/* ERROR_EN:		0x0078 - 0000 0000 0111 1000 */
 	}
 
+	HAL_Delay(500);
+
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Channel_0(i+1U, 2U);  /* I_OUT0_0 */
@@ -90,6 +92,8 @@ int sensor_adc_initialize(void)
 //			return SENSOR_ADC_SETUP_ERROR;
 //		}
 	}
+
+	HAL_Delay(500);
 
 	return SENSOR_ADC_OK;
 }
