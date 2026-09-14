@@ -14,3 +14,4 @@ tmp
 .settings/
 .target/
 org.eclipse.jdt.core.prefs
+/Release/

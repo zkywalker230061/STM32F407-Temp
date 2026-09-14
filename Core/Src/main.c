@@ -31,6 +31,8 @@
 #include "application/sensor_adc.h"
 #include "application/sensor_coeffs.h"
 #include "application/sensor_fit.h"
+#include "mb.h"
+#include "modbus_registers.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +46,10 @@
 #define SENSOR_READ_NOT_READY  1
 #define SENSOR_READ_ADC_ERROR -1
 #define SENSOR_READ_FIT_ERROR -2
+
+#define MODBUS_SLAVE_ADDRESS  1U
+#define MODBUS_PORT           0U
+#define MODBUS_BAUD_RATE      115200UL
 
 /* USER CODE END PD */
 
@@ -109,6 +115,7 @@ int main(void)
 	int adc_result;
 	int coeffs_result;
 	int read_result;
+	eMBErrorCode modbus_result;
 
 
 	/* sensor_adc: ADC initialize */
@@ -125,6 +132,25 @@ int main(void)
 		Error_Handler();
 	}
 
+	/* Modbus RTU initialize */
+	modbus_result = eMBInit(
+			MB_RTU,
+			MODBUS_SLAVE_ADDRESS,
+			MODBUS_PORT,
+			MODBUS_BAUD_RATE,
+			MB_PAR_EVEN
+	);
+	if (modbus_result != MB_ENOERR)
+	{
+		Error_Handler();
+	}
+
+	modbus_result = eMBEnable();
+	if (modbus_result != MB_ENOERR)
+	{
+		Error_Handler();
+	}
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -134,6 +160,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+		/* Modbus RTU poll */
+		modbus_result = eMBPoll();
+		if (modbus_result != MB_ENOERR)
+		{
+			Error_Handler();
+		}
 
 		/* sensor_coeffs: transfer, decode, save */
 		coeffs_result = sensor_coeffs_process();
@@ -252,6 +285,12 @@ static int read_sensor(void)
 
 		resistance[i][channel] = measured_resistance;
 		temperature[i][channel] = measured_temperature;
+		vMBRegInputUpdate(
+				i,
+				channel,
+				measured_resistance,
+				measured_temperature
+		);
 		read_count++;
 
 		printf(
