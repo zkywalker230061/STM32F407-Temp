@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "communication/sensor_coeffs_transfer.h"
+#include "communication/usb_cdc/usb_cdc_scup.h"
 #include "storage/sensor_coeffs_decoder.h"
 #include "storage/sensor_coeffs_format.h"
 #include "storage/sensor_coeffs_storage.h"

@@ -4,7 +4,7 @@
  */
 
 /* ----------------------- Platform includes --------------------------------*/
-#include "port.h"
+#include "communication/modbus/port.h"
 #include "tim.h"
 
 /* ----------------------- Modbus includes ----------------------------------*/

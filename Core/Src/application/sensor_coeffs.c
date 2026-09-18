@@ -93,23 +93,23 @@ int sensor_coeffs_process(void)
 	int compact_result;
 
 	/* transfer */
-	transfer_result = Sensor_Coeffs_Transfer_Get_Data(
+	transfer_result = USB_CDC_SCUP_Get_Data(
 			&adc_device_id,
 			&channel_id,
 			&binary_data,
 			&binary_length
 	);
-	if (transfer_result == SENSOR_COEFFS_TRANSFER_NOT_READY)
+	if (transfer_result == USB_CDC_SCUP_NOT_READY)
 	{
 		return SENSOR_COEFFS_NOT_READY;
 	}
-	if (transfer_result != SENSOR_COEFFS_TRANSFER_OK)
+	if (transfer_result != USB_CDC_SCUP_OK)
 	{
 		printf(
 				"Sensor coefficients transfer error: %d\r\n",
 				transfer_result
 		);
-		Sensor_Coeffs_Transfer_Reset();
+		USB_CDC_SCUP_Reset();
 		return SENSOR_COEFFS_TRANSFER_ERROR;
 	}
 
@@ -127,7 +127,7 @@ int sensor_coeffs_process(void)
 				(unsigned int)channel_id,
 				decode_result
 		);
-		Sensor_Coeffs_Transfer_Reset();
+		USB_CDC_SCUP_Reset();
 		return SENSOR_COEFFS_DECODE_ERROR;
 	}
 
@@ -144,7 +144,7 @@ int sensor_coeffs_process(void)
 		compact_result = sensor_coeffs_compact_flash();
 		if (compact_result != SENSOR_COEFFS_OK)
 		{
-			Sensor_Coeffs_Transfer_Reset();
+			USB_CDC_SCUP_Reset();
 			return compact_result;
 		}
 
@@ -163,7 +163,7 @@ int sensor_coeffs_process(void)
 				(unsigned int)channel_id,
 				storage_result
 		);
-		Sensor_Coeffs_Transfer_Reset();
+		USB_CDC_SCUP_Reset();
 		return SENSOR_COEFFS_STORAGE_SAVE_ERROR;
 	}
 
@@ -175,7 +175,7 @@ int sensor_coeffs_process(void)
 			(unsigned int)channel_id,
 			(unsigned int)received_curve.segment_count
 	);
-	Sensor_Coeffs_Transfer_Reset();
+	USB_CDC_SCUP_Reset();
 
 	return SENSOR_COEFFS_UPDATED;
 }

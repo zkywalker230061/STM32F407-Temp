@@ -7,7 +7,7 @@
 
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
-#include "modbus_registers.h"
+#include "communication/modbus/modbus_registers.h"
 
 /* ----------------------- Defines ------------------------------------------*/
 #define MB_ADC_COUNT                        2U
@@ -29,7 +29,10 @@ void
 vMBRegInputUpdate( uint8_t ucADCIndex, uint8_t ucChannel,
                    float fResistance, float fTemperature )
 {
-    USHORT usRegIndex;
+    USHORT usChannelIndex;
+    USHORT usTemperatureIndex;
+    USHORT usResistanceIndex;
+    USHORT usStatusIndex;
     xMBFloatValue xResistance;
     xMBFloatValue xTemperature;
 
@@ -38,16 +41,24 @@ vMBRegInputUpdate( uint8_t ucADCIndex, uint8_t ucChannel,
         return;
     }
 
-    usRegIndex = ( USHORT )( ( ucADCIndex * MB_CHANNEL_COUNT + ucChannel )
-                             * MB_INPUT_REGISTERS_PER_CHANNEL );
+    usChannelIndex = ( USHORT )( ucADCIndex * MB_CHANNEL_COUNT + ucChannel );
+    usTemperatureIndex = ( USHORT )( MB_INPUT_TEMPERATURE_OFFSET
+                                     + usChannelIndex * 2U );
+    usResistanceIndex = ( USHORT )( MB_INPUT_RESISTANCE_OFFSET
+                                    + usChannelIndex * 2U );
+    usStatusIndex = ( USHORT )( MB_INPUT_STATUS_OFFSET + usChannelIndex );
     xResistance.fValue = fResistance;
     xTemperature.fValue = fTemperature;
 
-    usRegInputBuf[usRegIndex] = MB_CHANNEL_STATUS_VALID;
-    usRegInputBuf[usRegIndex + 1U] = ( USHORT )( xResistance.ulValue >> 16 );
-    usRegInputBuf[usRegIndex + 2U] = ( USHORT )( xResistance.ulValue & 0xFFFFU );
-    usRegInputBuf[usRegIndex + 3U] = ( USHORT )( xTemperature.ulValue >> 16 );
-    usRegInputBuf[usRegIndex + 4U] = ( USHORT )( xTemperature.ulValue & 0xFFFFU );
+    usRegInputBuf[usTemperatureIndex] =
+        ( USHORT )( xTemperature.ulValue >> 16 );
+    usRegInputBuf[usTemperatureIndex + 1U] =
+        ( USHORT )( xTemperature.ulValue & 0xFFFFU );
+    usRegInputBuf[usResistanceIndex] =
+        ( USHORT )( xResistance.ulValue >> 16 );
+    usRegInputBuf[usResistanceIndex + 1U] =
+        ( USHORT )( xResistance.ulValue & 0xFFFFU );
+    usRegInputBuf[usStatusIndex] = MB_CHANNEL_STATUS_VALID;
 }
 
 eMBErrorCode

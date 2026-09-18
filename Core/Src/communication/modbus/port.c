@@ -3,7 +3,7 @@
  * Based on the FreeModbus BARE demo port.
  */
 
-#include "port.h"
+#include "communication/modbus/port.h"
 
 static ULONG ulCriticalNesting;
 static ULONG ulSavedPrimask;
