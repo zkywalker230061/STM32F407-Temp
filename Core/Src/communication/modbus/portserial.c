@@ -15,16 +15,16 @@
 void
 vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 {
-    __HAL_UART_DISABLE_IT( &huart2, UART_IT_RXNE );
-    __HAL_UART_DISABLE_IT( &huart2, UART_IT_TXE );
+    __HAL_UART_DISABLE_IT( &huart3, UART_IT_RXNE );
+    __HAL_UART_DISABLE_IT( &huart3, UART_IT_TXE );
 
     if( xRxEnable )
     {
-        __HAL_UART_ENABLE_IT( &huart2, UART_IT_RXNE );
+        __HAL_UART_ENABLE_IT( &huart3, UART_IT_RXNE );
     }
     if( xTxEnable )
     {
-        __HAL_UART_ENABLE_IT( &huart2, UART_IT_TXE );
+        __HAL_UART_ENABLE_IT( &huart3, UART_IT_TXE );
     }
 }
 
@@ -37,36 +37,36 @@ xMBPortSerialInit( UCHAR ucPort, ULONG ulBaudRate, UCHAR ucDataBits,
         return FALSE;
     }
 
-    huart2.Init.BaudRate = ulBaudRate;
-    huart2.Init.Mode = UART_MODE_TX_RX;
-    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+    huart3.Init.BaudRate = ulBaudRate;
+    huart3.Init.Mode = UART_MODE_TX_RX;
+    huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart3.Init.OverSampling = UART_OVERSAMPLING_16;
 
     switch( eParity )
     {
     case MB_PAR_NONE:
-        huart2.Init.WordLength = UART_WORDLENGTH_8B;
-        huart2.Init.StopBits = UART_STOPBITS_2;
-        huart2.Init.Parity = UART_PARITY_NONE;
+        huart3.Init.WordLength = UART_WORDLENGTH_8B;
+        huart3.Init.StopBits = UART_STOPBITS_2;
+        huart3.Init.Parity = UART_PARITY_NONE;
         break;
 
     case MB_PAR_ODD:
-        huart2.Init.WordLength = UART_WORDLENGTH_9B;
-        huart2.Init.StopBits = UART_STOPBITS_1;
-        huart2.Init.Parity = UART_PARITY_ODD;
+        huart3.Init.WordLength = UART_WORDLENGTH_9B;
+        huart3.Init.StopBits = UART_STOPBITS_1;
+        huart3.Init.Parity = UART_PARITY_ODD;
         break;
 
     case MB_PAR_EVEN:
-        huart2.Init.WordLength = UART_WORDLENGTH_9B;
-        huart2.Init.StopBits = UART_STOPBITS_1;
-        huart2.Init.Parity = UART_PARITY_EVEN;
+        huart3.Init.WordLength = UART_WORDLENGTH_9B;
+        huart3.Init.StopBits = UART_STOPBITS_1;
+        huart3.Init.Parity = UART_PARITY_EVEN;
         break;
 
     default:
         return FALSE;
     }
 
-    if( HAL_UART_Init( &huart2 ) != HAL_OK )
+    if( HAL_UART_Init( &huart3 ) != HAL_OK )
     {
         return FALSE;
     }
@@ -78,7 +78,7 @@ xMBPortSerialInit( UCHAR ucPort, ULONG ulBaudRate, UCHAR ucDataBits,
 BOOL
 xMBPortSerialPutByte( CHAR ucByte )
 {
-    huart2.Instance->DR = ( uint16_t )( ( UCHAR )ucByte );
+    huart3.Instance->DR = ( uint16_t )( ( UCHAR )ucByte );
     return TRUE;
 }
 
@@ -90,7 +90,7 @@ xMBPortSerialGetByte( CHAR * pucByte )
         return FALSE;
     }
 
-    *pucByte = ( CHAR )( huart2.Instance->DR & 0xFFU );
+    *pucByte = ( CHAR )( huart3.Instance->DR & 0xFFU );
     return TRUE;
 }
 
@@ -113,8 +113,8 @@ vMBPortSerialIRQHandler( void )
     ULONG ulStatus;
     ULONG ulControl;
 
-    ulStatus = huart2.Instance->SR;
-    ulControl = huart2.Instance->CR1;
+    ulStatus = huart3.Instance->SR;
+    ulControl = huart3.Instance->CR1;
 
     if( ( ( ulStatus & USART_SR_RXNE ) != 0UL )
         && ( ( ulControl & USART_CR1_RXNEIE ) != 0UL ) )
@@ -133,7 +133,7 @@ vMBPortSerialIRQHandler( void )
     {
         volatile ULONG ulData;
 
-        ulData = huart2.Instance->DR;
+        ulData = huart3.Instance->DR;
         ( void )ulData;
     }
 }
