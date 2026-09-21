@@ -11,14 +11,14 @@ typedef struct
 
 static AD4130Device_t ad4130_devices[2] = {
 	{
-		.hspi = &hspi1,
-		.cs_port = SPI1_CS1_GPIO_Port,
-		.cs_pin = SPI1_CS1_Pin
+		.hspi = &hspi3,
+		.cs_port = SPI3_CS1_GPIO_Port,
+		.cs_pin = SPI3_CS1_Pin
 	},
 	{
-		.hspi = &hspi1,
-		.cs_port = SPI1_CS2_GPIO_Port,
-		.cs_pin = SPI1_CS2_Pin
+		.hspi = &hspi3,
+		.cs_port = SPI3_CS2_GPIO_Port,
+		.cs_pin = SPI3_CS2_Pin
 	}
 };
 
