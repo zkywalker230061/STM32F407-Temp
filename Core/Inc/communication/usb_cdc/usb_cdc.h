@@ -19,8 +19,9 @@ extern "C" {
 typedef enum
 {
 	USB_CDC_COMMAND_NONE = 0,
+	USB_CDC_COMMAND_RSET,
 	USB_CDC_COMMAND_SCUP,
-	USB_CDC_COMMAND_RSET
+	USB_CDC_COMMAND_CRSC
 } USB_CDC_Command_t;
 
 extern volatile USB_CDC_Command_t usb_cdc_command;

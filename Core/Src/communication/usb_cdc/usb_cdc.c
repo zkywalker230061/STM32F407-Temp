@@ -10,8 +10,9 @@
 typedef enum
 {
 	USB_CDC_FRAME_NONE = 0,
+	USB_CDC_FRAME_RSET,
 	USB_CDC_FRAME_SCUP,
-	USB_CDC_FRAME_RSET
+	USB_CDC_FRAME_CRSC
 } USB_CDC_Frame_t;
 
 static uint8_t usb_cdc_magic[USB_CDC_MAGIC_SIZE];
@@ -88,12 +89,26 @@ int USB_CDC_Receive(
 			return USB_CDC_OK;
 		}
 
-		result = USB_CDC_SCUP_Receive(usb_cdc_magic, USB_CDC_MAGIC_SIZE);
-		if (result != USB_CDC_SCUP_NOT_READY)
+		if (usb_cdc_frame == USB_CDC_FRAME_SCUP)
+		{
+			result = USB_CDC_SCUP_Receive(usb_cdc_magic, USB_CDC_MAGIC_SIZE);
+			if (result != USB_CDC_SCUP_NOT_READY)
+			{
+				USB_CDC_Reset_Frame();
+				usb_cdc_command = USB_CDC_COMMAND_SCUP;
+				return USB_CDC_Convert_SCUP_Result(result);
+			}
+		}
+
+		if (usb_cdc_frame == USB_CDC_FRAME_CRSC)
 		{
 			USB_CDC_Reset_Frame();
-			usb_cdc_command = USB_CDC_COMMAND_SCUP;
-			return USB_CDC_Convert_SCUP_Result(result);
+			if (data_index < length)
+			{
+				return USB_CDC_LENGTH_ERROR;
+			}
+			usb_cdc_command = USB_CDC_COMMAND_CRSC;
+			return USB_CDC_OK;
 		}
 	}
 
@@ -154,6 +169,17 @@ static void USB_CDC_Reset_Frame(void)
 static int USB_CDC_Identify_Frame(void)
 {
 	if (
+			(usb_cdc_magic[0] == 'R')
+			&& (usb_cdc_magic[1] == 'S')
+			&& (usb_cdc_magic[2] == 'E')
+			&& (usb_cdc_magic[3] == 'T')
+	)
+	{
+		usb_cdc_frame = USB_CDC_FRAME_RSET;
+		return USB_CDC_OK;
+	}
+
+	if (
 			(usb_cdc_magic[0] == 'S')
 			&& (usb_cdc_magic[1] == 'C')
 			&& (usb_cdc_magic[2] == 'U')
@@ -165,13 +191,13 @@ static int USB_CDC_Identify_Frame(void)
 	}
 
 	if (
-			(usb_cdc_magic[0] == 'R')
-			&& (usb_cdc_magic[1] == 'S')
-			&& (usb_cdc_magic[2] == 'E')
-			&& (usb_cdc_magic[3] == 'T')
+			(usb_cdc_magic[0] == 'C')
+			&& (usb_cdc_magic[1] == 'R')
+			&& (usb_cdc_magic[2] == 'S')
+			&& (usb_cdc_magic[3] == 'C')
 	)
 	{
-		usb_cdc_frame = USB_CDC_FRAME_RSET;
+		usb_cdc_frame = USB_CDC_FRAME_CRSC;
 		return USB_CDC_OK;
 	}
 

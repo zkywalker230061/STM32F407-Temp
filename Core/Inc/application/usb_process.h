@@ -3,6 +3,7 @@
 
 #include "application/sensor_coeffs.h"
 #include "communication/usb_cdc/usb_cdc.h"
+#include "storage/sensor_coeffs_storage.h"
 
 #ifdef __cplusplus
 extern "C" {

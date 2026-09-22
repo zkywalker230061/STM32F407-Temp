@@ -13,13 +13,13 @@
 extern "C" {
 #endif
 
-#define SENSOR_COEFFS_OK                  0
-#define SENSOR_COEFFS_NOT_READY           1
-#define SENSOR_COEFFS_UPDATED             2
-#define SENSOR_COEFFS_DECODE_ERROR       -2
-#define SENSOR_COEFFS_STORAGE_LOAD_ERROR -3
-#define SENSOR_COEFFS_STORAGE_SAVE_ERROR -4
-#define SENSOR_COEFFS_TRANSFER_ERROR     -5
+#define SENSOR_COEFFS_OK                     0
+#define SENSOR_COEFFS_NOT_READY              1
+#define SENSOR_COEFFS_UPDATED                2
+#define SENSOR_COEFFS_DECODE_ERROR          -2
+#define SENSOR_COEFFS_STORAGE_LOAD_ERROR    -3
+#define SENSOR_COEFFS_STORAGE_SAVE_ERROR    -4
+#define SENSOR_COEFFS_TRANSFER_ERROR        -5
 
 int sensor_coeffs_initialize(void);
 
