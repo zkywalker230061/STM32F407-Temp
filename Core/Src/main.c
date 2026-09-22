@@ -116,8 +116,8 @@ int main(void)
 
 	int adc_result;
 	int coeffs_result;
+	eMBErrorCode modbus_rtu_result;
 	int read_result;
-	eMBErrorCode modbus_result;
 
 
 	/* sensor_adc: ADC initialize */
@@ -135,20 +135,20 @@ int main(void)
 	}
 
 	/* Modbus RTU initialize */
-	modbus_result = eMBInit(
+	modbus_rtu_result = eMBInit(
 			MB_RTU,
 			MODBUS_SLAVE_ADDRESS,
 			MODBUS_PORT,
 			MODBUS_BAUD_RATE,
 			MB_PAR_EVEN
 	);
-	if (modbus_result != MB_ENOERR)
+	if (modbus_rtu_result != MB_ENOERR)
 	{
 		Error_Handler();
 	}
 
-	modbus_result = eMBEnable();
-	if (modbus_result != MB_ENOERR)
+	modbus_rtu_result = eMBEnable();
+	if (modbus_rtu_result != MB_ENOERR)
 	{
 		Error_Handler();
 	}
@@ -164,8 +164,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 		/* Modbus RTU poll */
-		modbus_result = eMBPoll();
-		if (modbus_result != MB_ENOERR)
+		modbus_rtu_result = eMBPoll();
+		if (modbus_rtu_result != MB_ENOERR)
 		{
 			Error_Handler();
 		}
@@ -247,7 +247,7 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 static int read_sensor(void)
 {
-	HAL_StatusTypeDef result;
+	int result;
 	uint8_t channel;
 	int fit_result;
 	float measured_resistance;
@@ -257,11 +257,11 @@ static int read_sensor(void)
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Read_Resistance(i+1U, &channel, &measured_resistance);
-		if (result == HAL_BUSY)
+		if (result == AD4130_MEASUREMENT_NOT_READY)
 		{
 			continue;
 		}
-		if (result != HAL_OK)
+		if (result != AD4130_MEASUREMENT_OK)
 		{
 			printf(
 					"ADC %u read incorrect: %d\r\n",

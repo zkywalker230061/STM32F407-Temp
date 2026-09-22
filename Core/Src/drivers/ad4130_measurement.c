@@ -1,23 +1,25 @@
 #include "drivers/ad4130_measurement.h"
 
-#define AD4130_DATA_LOW           0x346DC6U  /* 2.0 mV */
-#define AD4130_DATA_HIGH          0xD1B717U  /* 8.0 mV */
-#define AD4130_DATA_100NA_RETURN  0x01F751U  /* 7.5 mV at 10 µA */
-                                             /* 75 µV at 100 nA */
+#define AD4130_DATA_LOW					0x346DC6U  /* 2.0 mV */
+#define AD4130_DATA_HIGH				0xD1B717U  /* 8.0 mV */
+#define AD4130_DATA_100NA_RETURN		0x01F751U  /* 75 µV at 100 nA */
+										           /* 7.5 mV at 10 µA */
+#define AD4130_DATA_100NA_OVER_RANGE	0xF33333U  /* 95% */
 
-static HAL_StatusTypeDef AD4130_Get_Autorange_Level(
+static int AD4130_Get_Autorange_Level(
 		uint8_t current_level,
 		uint32_t data,
 		uint8_t *new_level
 );
 
-HAL_StatusTypeDef AD4130_Read_Resistance(
+int AD4130_Read_Resistance(
 		uint8_t adc_device_id,
 		uint8_t *channel,
 		float *resistance
 )
 {
 	HAL_StatusTypeDef result;
+	int autorange_result;
 	uint32_t data_status = 0;
 	uint32_t data = 0;
 	uint8_t status = 0;
@@ -31,32 +33,36 @@ HAL_StatusTypeDef AD4130_Read_Resistance(
 			|| (channel == NULL) || (resistance == NULL)
 	)
 	{
-		return HAL_ERROR;
+		return AD4130_MEASUREMENT_PARAM_ERROR;
 	}
 	*channel = 0xFFU;
 	*resistance = 0.0f;
 
 	result = AD4130_Read_32_Bit(adc_device_id, AD4130_DATA, &data_status);
+	if (result == HAL_TIMEOUT)
+	{
+		return AD4130_MEASUREMENT_TIMEOUT;
+	}
 	if (result != HAL_OK)
 	{
-		return result;
+		return AD4130_MEASUREMENT_COMM_ERROR;
 	}
 
 	status = data_status & 0xFFU;
 	data = (data_status >> 8) & 0xFFFFFFU;
 	if ((status & 0x80U) != 0U)
 	{
-		return HAL_BUSY;
+		return AD4130_MEASUREMENT_NOT_READY;
 	}
-	if ((status & 0x70U) != 0U)
+	if ((status & 0x50U) != 0U)
 	{
-		return HAL_ERROR;
+		return AD4130_MEASUREMENT_STATUS_ERROR;
 	}
 
 	*channel = status & 0x0FU;
 	if (*channel > 3U)
 	{
-		return HAL_ERROR;
+		return AD4130_MEASUREMENT_CHANNEL_CONFIG_ERROR;
 	}
 
 	switch (*channel)
@@ -82,12 +88,16 @@ HAL_StatusTypeDef AD4130_Read_Resistance(
 			break;
 
 		default:
-			return HAL_ERROR;
+			return AD4130_MEASUREMENT_CHANNEL_CONFIG_ERROR;
 	}
 
-	if (iout <= 0.0f)
+	if (iout_level == 0U)
 	{
-		return HAL_ERROR;
+		return AD4130_MEASUREMENT_BELOW_RANGE;
+	}
+	if (iout < 0.0f)
+	{
+		return AD4130_MEASUREMENT_IOUT_CONFIG_ERROR;
 	}
 
 	voltage = (
@@ -98,10 +108,14 @@ HAL_StatusTypeDef AD4130_Read_Resistance(
 	*resistance = voltage / iout;
 
 	new_iout_level = iout_level;
-	result = AD4130_Get_Autorange_Level(iout_level, data, &new_iout_level);
-	if (result != HAL_OK)
+	autorange_result = AD4130_Get_Autorange_Level(
+			iout_level,
+			data,
+			&new_iout_level
+	);
+	if (autorange_result != AD4130_MEASUREMENT_OK)
 	{
-		return result;
+		return autorange_result;
 	}
 
 	if (new_iout_level != iout_level)
@@ -125,24 +139,28 @@ HAL_StatusTypeDef AD4130_Read_Resistance(
 				break;
 
 			default:
-				return HAL_ERROR;
+				return AD4130_MEASUREMENT_CHANNEL_CONFIG_ERROR;
 		}
 
 		if (result != HAL_OK)
 		{
-			return result;
+			if (result == HAL_TIMEOUT)
+			{
+				return AD4130_MEASUREMENT_TIMEOUT;
+			}
+			return AD4130_MEASUREMENT_COMM_ERROR;
 		}
 	}
 
 	if (new_iout_level == 0U)
 	{
-		return HAL_ERROR;
+		return AD4130_MEASUREMENT_BELOW_RANGE;
 	}
 
-	return HAL_OK;
+	return AD4130_MEASUREMENT_OK;
 }
 
-static HAL_StatusTypeDef AD4130_Get_Autorange_Level(
+static int AD4130_Get_Autorange_Level(
 		uint8_t current_level,
 		uint32_t data,
 		uint8_t *new_level
@@ -150,7 +168,7 @@ static HAL_StatusTypeDef AD4130_Get_Autorange_Level(
 {
 	if ((current_level < 1U) || (current_level > 7U) || (new_level == NULL))
 	{
-		return HAL_ERROR;
+		return AD4130_MEASUREMENT_IOUT_CONFIG_ERROR;
 	}
 
 	data &= 0xFFFFFFU;
@@ -161,11 +179,15 @@ static HAL_StatusTypeDef AD4130_Get_Autorange_Level(
 	 */
 	if (current_level == 1U)
 	{
+		if (data >= AD4130_DATA_100NA_OVER_RANGE)
+		{
+			return AD4130_MEASUREMENT_ABOVE_RANGE;
+		}
 		if (data <= AD4130_DATA_100NA_RETURN)
 		{
 			*new_level = 2U;  /* 100 nA -> 10 µA */
 		}
-		return HAL_OK;
+		return AD4130_MEASUREMENT_OK;
 	}
 
 	if (data >= AD4130_DATA_HIGH)
@@ -197,7 +219,7 @@ static HAL_StatusTypeDef AD4130_Get_Autorange_Level(
 				break;
 
 			default:
-				return HAL_ERROR;
+				return AD4130_MEASUREMENT_IOUT_CONFIG_ERROR;
 		}
 	}
 	else if (data <= AD4130_DATA_LOW)
@@ -229,8 +251,8 @@ static HAL_StatusTypeDef AD4130_Get_Autorange_Level(
 				break;
 
 			default:
-				return HAL_ERROR;
+				return AD4130_MEASUREMENT_IOUT_CONFIG_ERROR;
 		}
 	}
-	return HAL_OK;
+	return AD4130_MEASUREMENT_OK;
 }
