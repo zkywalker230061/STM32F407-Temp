@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "lwip.h"
 #include "rtc.h"
 #include "spi.h"
 #include "tim.h"
@@ -105,9 +106,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART3_UART_Init();
-  MX_SPI3_Init();
   MX_USB_DEVICE_Init();
+  MX_SPI3_Init();
+  MX_USART3_UART_Init();
+  // MX_LWIP_Init();
   MX_RTC_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
@@ -167,6 +169,9 @@ int main(void)
 		{
 			Error_Handler();
 		}
+
+		/* Ethernet and LwIP process */
+		// MX_LWIP_Process();
 
 		/* sensor_coeffs: transfer, decode, save */
 		coeffs_result = sensor_coeffs_process();
