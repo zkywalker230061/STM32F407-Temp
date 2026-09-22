@@ -17,7 +17,8 @@ typedef enum
 static uint8_t usb_cdc_magic[USB_CDC_MAGIC_SIZE];
 static uint32_t usb_cdc_magic_length;
 static USB_CDC_Frame_t usb_cdc_frame;
-static volatile USB_CDC_Command_t usb_cdc_pending_command;
+
+volatile USB_CDC_Command_t usb_cdc_command;
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
@@ -29,7 +30,7 @@ int USB_CDC_Initialize(void)
 {
 	USB_CDC_Reset_Frame();
 	USB_CDC_SCUP_Reset();
-	usb_cdc_pending_command = USB_CDC_COMMAND_NONE;
+	usb_cdc_command = USB_CDC_COMMAND_NONE;
 
 	return USB_CDC_OK;
 }
@@ -49,6 +50,11 @@ int USB_CDC_Receive(
 
 	if (usb_cdc_frame == USB_CDC_FRAME_NONE)
 	{
+		if (usb_cdc_command != USB_CDC_COMMAND_NONE)
+		{
+			return USB_CDC_BUSY;
+		}
+
 		while (
 				(usb_cdc_magic_length < USB_CDC_MAGIC_SIZE)
 				&& (data_index < length)
@@ -76,9 +82,9 @@ int USB_CDC_Receive(
 			USB_CDC_Reset_Frame();
 			if (data_index < length)
 			{
-				usb_cdc_pending_command = USB_CDC_COMMAND_NONE;
 				return USB_CDC_LENGTH_ERROR;
 			}
+			usb_cdc_command = USB_CDC_COMMAND_RSET;
 			return USB_CDC_OK;
 		}
 
@@ -86,6 +92,7 @@ int USB_CDC_Receive(
 		if (result != USB_CDC_SCUP_NOT_READY)
 		{
 			USB_CDC_Reset_Frame();
+			usb_cdc_command = USB_CDC_COMMAND_SCUP;
 			return USB_CDC_Convert_SCUP_Result(result);
 		}
 	}
@@ -99,6 +106,7 @@ int USB_CDC_Receive(
 	if (result != USB_CDC_SCUP_NOT_READY)
 	{
 		USB_CDC_Reset_Frame();
+		usb_cdc_command = USB_CDC_COMMAND_SCUP;
 	}
 
 	return USB_CDC_Convert_SCUP_Result(result);
@@ -137,24 +145,6 @@ int USB_CDC_Transmit(
 	return USB_CDC_TRANSMIT_ERROR;
 }
 
-int USB_CDC_Get_Command(USB_CDC_Command_t *command)
-{
-	if (command == NULL)
-	{
-		return USB_CDC_PARAM_ERROR;
-	}
-
-	if (usb_cdc_pending_command == USB_CDC_COMMAND_NONE)
-	{
-		return USB_CDC_NOT_READY;
-	}
-
-	*command = usb_cdc_pending_command;
-	usb_cdc_pending_command = USB_CDC_COMMAND_NONE;
-
-	return USB_CDC_OK;
-}
-
 static void USB_CDC_Reset_Frame(void)
 {
 	usb_cdc_magic_length = 0U;
@@ -181,12 +171,6 @@ static int USB_CDC_Identify_Frame(void)
 			&& (usb_cdc_magic[3] == 'T')
 	)
 	{
-		if (usb_cdc_pending_command != USB_CDC_COMMAND_NONE)
-		{
-			return USB_CDC_BUSY;
-		}
-
-		usb_cdc_pending_command = USB_CDC_COMMAND_RSET;
 		usb_cdc_frame = USB_CDC_FRAME_RSET;
 		return USB_CDC_OK;
 	}

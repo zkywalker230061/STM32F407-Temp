@@ -32,6 +32,7 @@
 #include "application/sensor_adc.h"
 #include "application/sensor_coeffs.h"
 #include "application/sensor_fit.h"
+#include "application/usb_process.h"
 #include "mb.h"
 #include "communication/modbus/modbus_registers.h"
 /* USER CODE END Includes */
@@ -116,6 +117,7 @@ int main(void)
 
 	int adc_result;
 	int coeffs_result;
+	int usb_result;
 	eMBErrorCode modbus_rtu_result;
 	int read_result;
 
@@ -163,6 +165,16 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+		/* USB process */
+		usb_result = usb_process();
+		if (
+				(usb_result != USB_PROCESS_OK)
+				&& (usb_result != USB_PROCESS_NOT_READY)
+		)
+		{
+			Error_Handler();
+		}
+
 		/* Modbus RTU poll */
 		modbus_rtu_result = eMBPoll();
 		if (modbus_rtu_result != MB_ENOERR)
@@ -172,17 +184,6 @@ int main(void)
 
 		/* Ethernet and LwIP process */
 		// MX_LWIP_Process();
-
-		/* sensor_coeffs: transfer, decode, save */
-		coeffs_result = sensor_coeffs_process();
-		if (coeffs_result == SENSOR_COEFFS_UPDATED)
-		{
-			NVIC_SystemReset();
-		}
-		else if (coeffs_result != SENSOR_COEFFS_NOT_READY)
-		{
-			Error_Handler();
-		}
 
 		/* ADC read */
 		read_result = read_sensor();

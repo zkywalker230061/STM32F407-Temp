@@ -19,8 +19,11 @@ extern "C" {
 typedef enum
 {
 	USB_CDC_COMMAND_NONE = 0,
+	USB_CDC_COMMAND_SCUP,
 	USB_CDC_COMMAND_RSET
 } USB_CDC_Command_t;
+
+extern volatile USB_CDC_Command_t usb_cdc_command;
 
 int USB_CDC_Initialize(void);
 
@@ -33,8 +36,6 @@ int USB_CDC_Transmit(
 		const uint8_t *data,
 		uint16_t length
 );
-
-int USB_CDC_Get_Command(USB_CDC_Command_t *command);
 
 #ifdef __cplusplus
 }
