@@ -32,7 +32,7 @@
 #include "application/sensor_adc.h"
 #include "application/sensor_coeffs.h"
 #include "application/sensor_fit.h"
-#include "application/usb_process.h"
+#include "application/usb_comm.h"
 #include "mb.h"
 #include "communication/modbus/modbus_registers.h"
 /* USER CODE END Includes */
@@ -165,11 +165,11 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-		/* USB process */
-		usb_result = usb_process();
+		/* USB communication process */
+		usb_result = usb_comm_process();
 		if (
-				(usb_result != USB_PROCESS_OK)
-				&& (usb_result != USB_PROCESS_NOT_READY)
+				(usb_result != USB_COMM_OK)
+				&& (usb_result != USB_COMM_NOT_READY)
 		)
 		{
 			Error_Handler();
@@ -299,13 +299,16 @@ static int read_sensor(void)
 		);
 		read_count++;
 
-		printf(
-				"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
-				(unsigned int)(i+1U),
-				(unsigned int)(channel+1U),
-				(double)resistance[i][channel],
-				(double)temperature[i][channel]
-		);
+		if (usb_comm_measurement_log_enabled() != 0U)
+		{
+			printf(
+					"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
+					(unsigned int)(i+1U),
+					(unsigned int)(channel+1U),
+					(double)resistance[i][channel],
+					(double)temperature[i][channel]
+			);
+		}
 		/* HAL_Delay(1000); */
 	}
 

@@ -12,12 +12,15 @@ typedef enum
 	USB_CDC_FRAME_NONE = 0,
 	USB_CDC_FRAME_RSET,
 	USB_CDC_FRAME_SCUP,
-	USB_CDC_FRAME_CRSC
+	USB_CDC_FRAME_CRSC,
+	USB_CDC_FRAME_LOGE,
+	USB_CDC_FRAME_LOGD
 } USB_CDC_Frame_t;
 
 static uint8_t usb_cdc_magic[USB_CDC_MAGIC_SIZE];
 static uint32_t usb_cdc_magic_length;
 static USB_CDC_Frame_t usb_cdc_frame;
+static volatile uint8_t usb_cdc_transmit_busy;
 
 volatile USB_CDC_Command_t usb_cdc_command;
 
@@ -32,6 +35,7 @@ int USB_CDC_Initialize(void)
 	USB_CDC_Reset_Frame();
 	USB_CDC_SCUP_Reset();
 	usb_cdc_command = USB_CDC_COMMAND_NONE;
+	usb_cdc_transmit_busy = 0U;
 
 	return USB_CDC_OK;
 }
@@ -110,6 +114,28 @@ int USB_CDC_Receive(
 			usb_cdc_command = USB_CDC_COMMAND_CRSC;
 			return USB_CDC_OK;
 		}
+
+		if (usb_cdc_frame == USB_CDC_FRAME_LOGE)
+		{
+			USB_CDC_Reset_Frame();
+			if (data_index < length)
+			{
+				return USB_CDC_LENGTH_ERROR;
+			}
+			usb_cdc_command = USB_CDC_COMMAND_LOGE;
+			return USB_CDC_OK;
+		}
+
+		if (usb_cdc_frame == USB_CDC_FRAME_LOGD)
+		{
+			USB_CDC_Reset_Frame();
+			if (data_index < length)
+			{
+				return USB_CDC_LENGTH_ERROR;
+			}
+			usb_cdc_command = USB_CDC_COMMAND_LOGD;
+			return USB_CDC_OK;
+		}
 	}
 
 	if (data_index == length)
@@ -125,39 +151,6 @@ int USB_CDC_Receive(
 	}
 
 	return USB_CDC_Convert_SCUP_Result(result);
-}
-
-int USB_CDC_Transmit(
-		const uint8_t *data,
-		uint16_t length
-)
-{
-	uint8_t result;
-
-	if ((data == NULL) || (length == 0U))
-	{
-		return USB_CDC_PARAM_ERROR;
-	}
-
-	if (
-			(hUsbDeviceFS.dev_state != USBD_STATE_CONFIGURED)
-			|| (hUsbDeviceFS.pClassData == NULL)
-	)
-	{
-		return USB_CDC_NOT_READY;
-	}
-
-	result = CDC_Transmit_FS((uint8_t *)data, length);
-	if (result == USBD_OK)
-	{
-		return USB_CDC_OK;
-	}
-	if (result == USBD_BUSY)
-	{
-		return USB_CDC_BUSY;
-	}
-
-	return USB_CDC_TRANSMIT_ERROR;
 }
 
 static void USB_CDC_Reset_Frame(void)
@@ -201,6 +194,28 @@ static int USB_CDC_Identify_Frame(void)
 		return USB_CDC_OK;
 	}
 
+	if (
+			(usb_cdc_magic[0] == 'L')
+			&& (usb_cdc_magic[1] == 'O')
+			&& (usb_cdc_magic[2] == 'G')
+			&& (usb_cdc_magic[3] == 'E')
+	)
+	{
+		usb_cdc_frame = USB_CDC_FRAME_LOGE;
+		return USB_CDC_OK;
+	}
+
+	if (
+			(usb_cdc_magic[0] == 'L')
+			&& (usb_cdc_magic[1] == 'O')
+			&& (usb_cdc_magic[2] == 'G')
+			&& (usb_cdc_magic[3] == 'D')
+	)
+	{
+		usb_cdc_frame = USB_CDC_FRAME_LOGD;
+		return USB_CDC_OK;
+	}
+
 	return USB_CDC_FORMAT_ERROR;
 }
 
@@ -229,4 +244,59 @@ static int USB_CDC_Convert_SCUP_Result(int result)
 		default:
 			return USB_CDC_FORMAT_ERROR;
 	}
+}
+
+int USB_CDC_Transmit(
+		const uint8_t *data,
+		uint16_t length
+)
+{
+	uint8_t result;
+
+	if ((data == NULL) || (length == 0U))
+	{
+		return USB_CDC_PARAM_ERROR;
+	}
+
+	if (USB_CDC_Transmit_Ready() == 0U)
+	{
+		return USB_CDC_NOT_READY;
+	}
+
+	usb_cdc_transmit_busy = 1U;
+	result = CDC_Transmit_FS((uint8_t *)data, length);
+	if (result == USBD_OK)
+	{
+		return USB_CDC_OK;
+	}
+	usb_cdc_transmit_busy = 0U;
+	if (result == USBD_BUSY)
+	{
+		return USB_CDC_BUSY;
+	}
+
+	return USB_CDC_TRANSMIT_ERROR;
+}
+
+uint8_t USB_CDC_Transmit_Ready(void)
+{
+	if (
+			(hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED)
+			&& (hUsbDeviceFS.pClassData != NULL)
+	)
+	{
+		return 1U;
+	}
+
+	return 0U;
+}
+
+uint8_t USB_CDC_Transmit_Busy(void)
+{
+	return usb_cdc_transmit_busy;
+}
+
+void USB_CDC_Transmit_Complete(void)
+{
+	usb_cdc_transmit_busy = 0U;
 }

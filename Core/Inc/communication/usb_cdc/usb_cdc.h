@@ -21,7 +21,9 @@ typedef enum
 	USB_CDC_COMMAND_NONE = 0,
 	USB_CDC_COMMAND_RSET,
 	USB_CDC_COMMAND_SCUP,
-	USB_CDC_COMMAND_CRSC
+	USB_CDC_COMMAND_CRSC,
+	USB_CDC_COMMAND_LOGE,
+	USB_CDC_COMMAND_LOGD
 } USB_CDC_Command_t;
 
 extern volatile USB_CDC_Command_t usb_cdc_command;
@@ -37,6 +39,12 @@ int USB_CDC_Transmit(
 		const uint8_t *data,
 		uint16_t length
 );
+
+uint8_t USB_CDC_Transmit_Ready(void);
+
+uint8_t USB_CDC_Transmit_Busy(void);
+
+void USB_CDC_Transmit_Complete(void);
 
 #ifdef __cplusplus
 }
