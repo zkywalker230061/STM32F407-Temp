@@ -1,11 +1,19 @@
 #include "storage/sensor_coeffs_storage.h"
 
+#include <stddef.h>
+
+#include "stm32f4xx_hal.h"
+
+#include "storage/sensor_coeffs_format.h"
+
+
 #define SENSOR_COEFFS_STORAGE_ADDRESS		0x080E0000U
 #define SENSOR_COEFFS_STORAGE_SECTOR		FLASH_SECTOR_11
 #define SENSOR_COEFFS_STORAGE_MAGIC			0x31464353U  /* SCF1 */
 #define SENSOR_COEFFS_STORAGE_HEADER_SIZE	12U
 #define SENSOR_COEFFS_STORAGE_RECORD_SIZE	360U
 #define SENSOR_COEFFS_STORAGE_RECORD_COUNT	364U
+
 
 static HAL_StatusTypeDef Sensor_Coeffs_Storage_Write_Word(
 		uint32_t address,

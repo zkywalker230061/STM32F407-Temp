@@ -1,11 +1,8 @@
 #ifndef USB_COMM_H
 #define USB_COMM_H
 
-#include <stddef.h>
 #include <stdint.h>
-#include "application/sensor_coeffs.h"
-#include "communication/usb_cdc/usb_cdc.h"
-#include "storage/sensor_coeffs_storage.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +16,7 @@ extern "C" {
 #define USB_COMM_LENGTH_ERROR   -4
 #define USB_COMM_BUSY           -5
 #define USB_COMM_TRANSMIT_ERROR -6
+
 
 int usb_comm_process(void);
 

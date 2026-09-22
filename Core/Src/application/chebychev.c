@@ -1,5 +1,8 @@
 #include "application/chebychev.h"
 
+#include <math.h>
+
+
 float chebychev_point(
 		float x, float zl, float zu,
 		const float *coeffs, int order

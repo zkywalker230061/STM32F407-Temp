@@ -1,8 +1,6 @@
 #ifndef USB_CDC_LOG_H
 #define USB_CDC_LOG_H
 
-#include "application/usb_comm.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -1,13 +1,10 @@
 #ifndef SENSOR_COEFFS_H
 #define SENSOR_COEFFS_H
 
-#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include "communication/usb_cdc/usb_cdc_scup.h"
-#include "storage/sensor_coeffs_decoder.h"
-#include "storage/sensor_coeffs_format.h"
-#include "storage/sensor_coeffs_storage.h"
+
+#include "application/sensor_fit.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +17,7 @@ extern "C" {
 #define SENSOR_COEFFS_STORAGE_LOAD_ERROR    -3
 #define SENSOR_COEFFS_STORAGE_SAVE_ERROR    -4
 #define SENSOR_COEFFS_TRANSFER_ERROR        -5
+
 
 int sensor_coeffs_initialize(void);
 

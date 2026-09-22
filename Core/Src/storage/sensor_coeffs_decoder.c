@@ -1,5 +1,10 @@
 #include "storage/sensor_coeffs_decoder.h"
 
+#include <stddef.h>
+
+#include "storage/sensor_coeffs_format.h"
+
+
 static uint16_t Sensor_Coeffs_Read_16_Bit(const uint8_t *data)
 {
 	return (

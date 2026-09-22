@@ -1,5 +1,8 @@
 #include "bsp/fpu.h"
 
+#include "stm32f4xx.h"
+
+
 void FPU_Enable(void)
 {
 #if defined(__ARM_FP) && (__ARM_FP != 0)

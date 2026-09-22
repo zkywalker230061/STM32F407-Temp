@@ -1,5 +1,11 @@
 #include "communication/usb_cdc/usb_cdc_log.h"
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include "application/usb_comm.h"
+
+
 int _write(
 		int file,
 		char *data,

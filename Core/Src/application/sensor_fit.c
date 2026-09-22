@@ -1,6 +1,11 @@
 #include "application/sensor_fit.h"
 
+#include <math.h>
+#include <stddef.h>
+
+#include "application/chebychev.h"
 #include "storage/sensor_coeffs.inc"
+
 
 static int resistance_to_temperature_from_inc(
 		float resistance,

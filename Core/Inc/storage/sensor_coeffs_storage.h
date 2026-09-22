@@ -1,10 +1,8 @@
 #ifndef SENSOR_COEFFS_STORAGE_H
 #define SENSOR_COEFFS_STORAGE_H
 
-#include <stddef.h>
 #include <stdint.h>
-#include "stm32f4xx_hal.h"
-#include "storage/sensor_coeffs_format.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +16,7 @@ extern "C" {
 #define SENSOR_COEFFS_STORAGE_WRITE_ERROR  -4
 #define SENSOR_COEFFS_STORAGE_VERIFY_ERROR -5
 #define SENSOR_COEFFS_STORAGE_FULL_ERROR   -6
+
 
 int Sensor_Coeffs_Storage_Save(
 		uint8_t adc_device_id,

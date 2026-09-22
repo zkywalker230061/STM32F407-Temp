@@ -1,8 +1,8 @@
 #ifndef USB_CDC_H
 #define USB_CDC_H
 
-#include <stddef.h>
 #include <stdint.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,6 +27,7 @@ typedef enum
 } USB_CDC_Command_t;
 
 extern volatile USB_CDC_Command_t usb_cdc_command;
+
 
 int USB_CDC_Initialize(void);
 

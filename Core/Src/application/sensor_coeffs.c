@@ -1,5 +1,14 @@
 #include "application/sensor_coeffs.h"
 
+#include <stddef.h>
+#include <stdio.h>
+
+#include "communication/usb_cdc/usb_cdc_scup.h"
+#include "storage/sensor_coeffs_decoder.h"
+#include "storage/sensor_coeffs_format.h"
+#include "storage/sensor_coeffs_storage.h"
+
+
 static Curve_t sensor_curves[2][4];
 static Curve_t received_curve;
 static uint8_t sensor_curve_valid[2][4];
@@ -10,6 +19,7 @@ static uint8_t sensor_coeffs_ram_valid[2][4];
 static int sensor_coeffs_copy_flash_to_ram(void);
 static int sensor_coeffs_copy_ram_to_flash(void);
 static int sensor_coeffs_compact_flash(void);
+
 
 int sensor_coeffs_initialize(void)
 {

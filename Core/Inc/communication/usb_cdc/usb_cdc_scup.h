@@ -1,9 +1,8 @@
 #ifndef USB_CDC_SCUP_H
 #define USB_CDC_SCUP_H
 
-#include <stddef.h>
 #include <stdint.h>
-#include "storage/sensor_coeffs_format.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,6 +14,7 @@ extern "C" {
 #define USB_CDC_SCUP_FORMAT_ERROR -2
 #define USB_CDC_SCUP_LENGTH_ERROR -3
 #define USB_CDC_SCUP_STATE_ERROR  -4
+
 
 int USB_CDC_SCUP_Receive(
 		const uint8_t *data,

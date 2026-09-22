@@ -1,5 +1,15 @@
 #include "application/usb_comm.h"
 
+#include <stddef.h>
+#include <stdio.h>
+
+#include "stm32f4xx_hal.h"
+
+#include "application/sensor_coeffs.h"
+#include "communication/usb_cdc/usb_cdc.h"
+#include "storage/sensor_coeffs_storage.h"
+
+
 #define USB_COMM_TX_BUFFER_COUNT 8U
 #define USB_COMM_TX_BUFFER_SIZE  256U
 
@@ -10,8 +20,10 @@ static uint8_t usb_comm_tx_write_index;
 static uint8_t usb_comm_tx_count;
 static uint8_t usb_comm_tx_transmitting;
 static uint8_t usb_comm_measurement_log_enable;
+static uint8_t usb_comm_reset_pending;
 
 static void usb_comm_reset_transmit(void);
+
 
 int usb_comm_process(void)
 {
@@ -19,13 +31,23 @@ int usb_comm_process(void)
 	int command_result;
 	int transmit_result;
 
-	command = usb_cdc_command;
+	if (usb_comm_reset_pending != 0U)
+	{
+		command = USB_CDC_COMMAND_NONE;
+	}
+	else
+	{
+		command = usb_cdc_command;
+	}
 	switch (command)
 	{
 		case USB_CDC_COMMAND_RSET:
 		{
-			NVIC_SystemReset();
-			return USB_COMM_OK;
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			printf("System reset\r\n");
+			usb_comm_reset_pending = 1U;
+			command_result = USB_COMM_OK;
+			break;
 		}
 
 		case USB_CDC_COMMAND_SCUP:
@@ -42,8 +64,10 @@ int usb_comm_process(void)
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			if (coeffs_result == SENSOR_COEFFS_UPDATED)
 			{
-				NVIC_SystemReset();
-				return USB_COMM_OK;
+				printf("Sensor coefficients updated\r\n");
+				usb_comm_reset_pending = 1U;
+				command_result = USB_COMM_OK;
+				break;
 			}
 			return USB_COMM_COEFFS_ERROR;
 		}
@@ -54,18 +78,21 @@ int usb_comm_process(void)
 
 			storage_result = Sensor_Coeffs_Storage_Erase();
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			if (storage_result != SENSOR_COEFFS_STORAGE_OK)
+			if (storage_result == SENSOR_COEFFS_STORAGE_OK)
 			{
-				return USB_COMM_COEFFS_ERROR;
+				printf("Sensor coefficients cleared\r\n");
+				usb_comm_reset_pending = 1U;
+				command_result = USB_COMM_OK;
+				break;
 			}
-			NVIC_SystemReset();
-			return USB_COMM_OK;
+			return USB_COMM_COEFFS_ERROR;
 		}
 
 		case USB_CDC_COMMAND_LOGE:
 		{
 			usb_comm_measurement_log_enable = 1U;
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			printf("Measurement log enabled\r\n");
 			command_result = USB_COMM_OK;
 			break;
 		}
@@ -74,6 +101,7 @@ int usb_comm_process(void)
 		{
 			usb_comm_measurement_log_enable = 0U;
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			printf("Measurement log disabled\r\n");
 			command_result = USB_COMM_OK;
 			break;
 		}
@@ -94,6 +122,10 @@ int usb_comm_process(void)
 	if (USB_CDC_Transmit_Ready() == 0U)
 	{
 		usb_comm_reset_transmit();
+		if (usb_comm_reset_pending != 0U)
+		{
+			NVIC_SystemReset();
+		}
 		return command_result;
 	}
 
@@ -115,6 +147,10 @@ int usb_comm_process(void)
 
 	if (usb_comm_tx_count == 0U)
 	{
+		if (usb_comm_reset_pending != 0U)
+		{
+			NVIC_SystemReset();
+		}
 		return command_result;
 	}
 

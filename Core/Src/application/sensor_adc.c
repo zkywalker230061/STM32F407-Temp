@@ -1,14 +1,21 @@
 #include "application/sensor_adc.h"
 
+#include <stdio.h>
+
+#include "stm32f4xx_hal.h"
+
+#include "drivers/ad4130.h"
+
+
 int sensor_adc_initialize(void)
 {
-	HAL_StatusTypeDef result;
+	AD4130Result_t result;
 	AD4130InitResult_t init_result[2] = {0};
 
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Init(i+1U, &init_result[i]);
-		if (result != HAL_OK)
+		if (result != AD4130_RESULT_OK)
 		{
 			printf(
 					"ADC %u INIT incorrect: %d\r\n",
@@ -49,7 +56,7 @@ int sensor_adc_initialize(void)
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Channel_0(i+1U, 2U);  /* I_OUT0_0 */
-		if (result != HAL_OK)
+		if (result != AD4130_RESULT_OK)
 		{
 			printf(
 					"ADC %u CHANNEL_0 setup incorrect: %d\r\n",
@@ -60,7 +67,7 @@ int sensor_adc_initialize(void)
 		}
 
 //		result = AD4130_Channel_1(i+1U, 2U);
-//		if (result != HAL_OK)
+//		if (result != AD4130_RESULT_OK)
 //		{
 //			printf(
 //					"ADC %u CHANNEL_1 setup incorrect: %d\r\n",
@@ -71,7 +78,7 @@ int sensor_adc_initialize(void)
 //		}
 //
 //		result = AD4130_Channel_2(i+1U, 2U);
-//		if (result != HAL_OK)
+//		if (result != AD4130_RESULT_OK)
 //		{
 //			printf(
 //					"ADC %u CHANNEL_2 setup incorrect: %d\r\n",
@@ -82,7 +89,7 @@ int sensor_adc_initialize(void)
 //		}
 //
 //		result = AD4130_Channel_3(i+1U, 2U);
-//		if (result != HAL_OK)
+//		if (result != AD4130_RESULT_OK)
 //		{
 //			printf(
 //					"ADC %u CHANNEL_3 setup incorrect: %d\r\n",

@@ -1,9 +1,12 @@
 #include "communication/usb_cdc/usb_cdc.h"
 
+#include <stddef.h>
+
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 
 #include "communication/usb_cdc/usb_cdc_scup.h"
+
 
 #define USB_CDC_MAGIC_SIZE 4U
 
@@ -29,6 +32,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 static void USB_CDC_Reset_Frame(void);
 static int USB_CDC_Identify_Frame(void);
 static int USB_CDC_Convert_SCUP_Result(int result);
+
 
 int USB_CDC_Initialize(void)
 {

@@ -1,5 +1,10 @@
 #include "communication/usb_cdc/usb_cdc_scup.h"
 
+#include <stddef.h>
+
+#include "storage/sensor_coeffs_format.h"
+
+
 #define USB_CDC_SCUP_HEADER_SIZE		12U
 #define USB_CDC_SCUP_FRAME_MAX_SIZE	360U
 
@@ -12,6 +17,7 @@ static uint32_t usb_cdc_scup_received_length;
 static volatile uint32_t usb_cdc_scup_binary_length;
 static volatile uint8_t usb_cdc_scup_state;
 static volatile int usb_cdc_scup_error;
+
 
 static uint32_t USB_CDC_SCUP_Read_32_Bit(const uint8_t *data)
 {

@@ -28,13 +28,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "drivers/ad4130_measurement.h"
 #include "application/sensor_adc.h"
 #include "application/sensor_coeffs.h"
 #include "application/sensor_fit.h"
 #include "application/usb_comm.h"
-#include "mb.h"
 #include "communication/modbus/modbus_registers.h"
+#include "drivers/ad4130_measurement.h"
+#include "mb.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

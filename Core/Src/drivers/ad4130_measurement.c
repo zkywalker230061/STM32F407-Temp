@@ -1,5 +1,10 @@
 #include "drivers/ad4130_measurement.h"
 
+#include <stddef.h>
+
+#include "drivers/ad4130.h"
+
+
 #define AD4130_DATA_LOW					0x346DC6U  /* 2.0 mV */
 #define AD4130_DATA_HIGH				0xD1B717U  /* 8.0 mV */
 #define AD4130_DATA_100NA_RETURN		0x01F751U  /* 75 µV at 100 nA */
@@ -12,13 +17,14 @@ static int AD4130_Get_Autorange_Level(
 		uint8_t *new_level
 );
 
+
 int AD4130_Read_Resistance(
 		uint8_t adc_device_id,
 		uint8_t *channel,
 		float *resistance
 )
 {
-	HAL_StatusTypeDef result;
+	AD4130Result_t result;
 	int autorange_result;
 	uint32_t data_status = 0;
 	uint32_t data = 0;
@@ -39,11 +45,11 @@ int AD4130_Read_Resistance(
 	*resistance = 0.0f;
 
 	result = AD4130_Read_32_Bit(adc_device_id, AD4130_DATA, &data_status);
-	if (result == HAL_TIMEOUT)
+	if (result == AD4130_RESULT_TIMEOUT)
 	{
 		return AD4130_MEASUREMENT_TIMEOUT;
 	}
-	if (result != HAL_OK)
+	if (result != AD4130_RESULT_OK)
 	{
 		return AD4130_MEASUREMENT_COMM_ERROR;
 	}
@@ -142,9 +148,9 @@ int AD4130_Read_Resistance(
 				return AD4130_MEASUREMENT_CHANNEL_CONFIG_ERROR;
 		}
 
-		if (result != HAL_OK)
+		if (result != AD4130_RESULT_OK)
 		{
-			if (result == HAL_TIMEOUT)
+			if (result == AD4130_RESULT_TIMEOUT)
 			{
 				return AD4130_MEASUREMENT_TIMEOUT;
 			}

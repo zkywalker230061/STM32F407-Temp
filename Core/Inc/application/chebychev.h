@@ -1,8 +1,6 @@
 #ifndef CHEBYCHEV_H
 #define CHEBYCHEV_H
 
-#include <math.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

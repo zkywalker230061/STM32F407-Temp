@@ -2,8 +2,7 @@
 #define AD4130_H
 
 #include <stdint.h>
-#include "spi.h"
-#include "gpio.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,6 +16,14 @@ typedef struct
 	uint8_t status;
 	uint16_t error;
 } AD4130InitResult_t;
+
+typedef enum
+{
+	AD4130_RESULT_OK = 0,
+	AD4130_RESULT_ERROR = -1,
+	AD4130_RESULT_BUSY = -2,
+	AD4130_RESULT_TIMEOUT = -3
+} AD4130Result_t;
 
 #define AD4130_VREF		1.25f
 #define AD4130_GAIN		128.0f
@@ -116,57 +123,61 @@ extern AD4130Iouts_t ad4130_iouts[2];
 #define AD4130_FIFO_THRESHOLD 0x3C  /* 24 bits */
 #define AD4130_FIFO_DATA      0x3D  /* 24 bits */
 
+
 /* ------------------------------------------------------------------------ */
 
-HAL_StatusTypeDef AD4130_Read_8_Bit(
+AD4130Result_t AD4130_Read_8_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		uint8_t *value
 );
-HAL_StatusTypeDef AD4130_Read_16_Bit(
+AD4130Result_t AD4130_Read_16_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		uint16_t *value
 );
-HAL_StatusTypeDef AD4130_Read_24_Bit(
+AD4130Result_t AD4130_Read_24_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		uint32_t *value
 );
-HAL_StatusTypeDef AD4130_Read_32_Bit(
+AD4130Result_t AD4130_Read_32_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		uint32_t *value
 );
-HAL_StatusTypeDef AD4130_Write(
+AD4130Result_t AD4130_Write(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		const uint8_t *data,
 		uint16_t len
 );
-HAL_StatusTypeDef AD4130_Reset(uint8_t adc_device_id);
-HAL_StatusTypeDef AD4130_Init(
-		uint8_t adc_device_id,
-		AD4130InitResult_t *init_result
-);
+AD4130Result_t AD4130_Reset(uint8_t adc_device_id);
 
 /* ------------------------------------------------------------------------ */
 
-HAL_StatusTypeDef AD4130_Config(uint8_t adc_device_id);
-HAL_StatusTypeDef AD4130_Filter(uint8_t adc_device_id);
-HAL_StatusTypeDef AD4130_Channel_0(
+AD4130Result_t AD4130_Init(
+		uint8_t adc_device_id,
+		AD4130InitResult_t *init_result
+);
+AD4130Result_t AD4130_Config(uint8_t adc_device_id);
+AD4130Result_t AD4130_Filter(uint8_t adc_device_id);
+
+/* ------------------------------------------------------------------------ */
+
+AD4130Result_t AD4130_Channel_0(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 );
-HAL_StatusTypeDef AD4130_Channel_1(
+AD4130Result_t AD4130_Channel_1(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 );
-HAL_StatusTypeDef AD4130_Channel_2(
+AD4130Result_t AD4130_Channel_2(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 );
-HAL_StatusTypeDef AD4130_Channel_3(
+AD4130Result_t AD4130_Channel_3(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 );

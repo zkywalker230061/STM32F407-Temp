@@ -1,7 +1,8 @@
 #ifndef AD4130_MEASUREMENT_H
 #define AD4130_MEASUREMENT_H
 
-#include "drivers/ad4130.h"
+#include <stdint.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,6 +18,7 @@ extern "C" {
 #define AD4130_MEASUREMENT_STATUS_ERROR       -6
 #define AD4130_MEASUREMENT_BELOW_RANGE        -7
 #define AD4130_MEASUREMENT_ABOVE_RANGE        -8
+
 
 int AD4130_Read_Resistance(
 		uint8_t adc_device_id,

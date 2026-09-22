@@ -2,8 +2,9 @@
 #define SENSOR_COEFFS_DECODER_H
 
 #include <stdint.h>
+
 #include "application/sensor_fit.h"
-#include "storage/sensor_coeffs_format.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +15,7 @@ extern "C" {
 #define SENSOR_COEFFS_DECODE_FORMAT_ERROR  -2
 #define SENSOR_COEFFS_DECODE_VERSION_ERROR -3
 #define SENSOR_COEFFS_DECODE_CRC_ERROR     -4
+
 
 int Sensor_Coeffs_Decode(
 		const uint8_t *data,

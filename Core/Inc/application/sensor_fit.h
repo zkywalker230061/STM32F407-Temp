@@ -2,9 +2,9 @@
 #define SENSOR_FIT_H
 
 #include <stdint.h>
-#include <math.h>
-#include "application/chebychev.h"
+
 #include "storage/sensor_coeffs_format.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +30,7 @@ typedef struct
 	CurveSegment_t segments[SENSOR_COEFFS_FORMAT_MAX_SEGMENTS];
 	uint16_t segment_count;
 } Curve_t;
+
 
 int resistance_to_temperature(
 		float resistance,
