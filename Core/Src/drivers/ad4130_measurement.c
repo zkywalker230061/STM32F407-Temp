@@ -66,7 +66,7 @@ ErrorCode_t AD4130_Read_Resistance(
 	*channel = status & 0x0FU;
 	if (*channel > 3U)
 	{
-		return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL_ID;
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
 	}
 
 	switch (*channel)
@@ -92,7 +92,7 @@ ErrorCode_t AD4130_Read_Resistance(
 			break;
 
 		default:
-			return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL_ID;
+			return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
 	}
 
 	if (iout_level == 0U)
@@ -143,7 +143,7 @@ ErrorCode_t AD4130_Read_Resistance(
 				break;
 
 			default:
-				return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL_ID;
+				return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
 		}
 
 		if (result != ERROR_CODE_NONE)

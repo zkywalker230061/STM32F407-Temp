@@ -76,7 +76,7 @@ static uint32_t Sensor_Coeffs_CRC32(const uint8_t *data, uint32_t length)
 	return crc ^ 0xFFFFFFFFU;
 }
 
-int Sensor_Coeffs_Decode(
+ErrorCode_t Sensor_Coeffs_Decode(
 		const uint8_t *data,
 		uint32_t length,
 		Curve_t *curve
@@ -92,7 +92,7 @@ int Sensor_Coeffs_Decode(
 
 	if ((data == NULL) || (curve == NULL))
 	{
-		return SENSOR_COEFFS_DECODE_PARAM_ERROR;
+		return ERROR_CODE_COEFFS_DECODE_ILLEGAL_PARAM;
 	}
 
 	if (
@@ -102,7 +102,7 @@ int Sensor_Coeffs_Decode(
 			)
 	)
 	{
-		return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
+		return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
 	}
 	data_length = length - SENSOR_COEFFS_FORMAT_CRC_SIZE;
 
@@ -111,13 +111,13 @@ int Sensor_Coeffs_Decode(
 			|| (data[2] != 'V') || (data[3] != '1')
 	)
 	{
-		return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
+		return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
 	}
 
 	version = Sensor_Coeffs_Read_16_Bit(&data[4]);
 	if (version != SENSOR_COEFFS_FORMAT_VERSION)
 	{
-		return SENSOR_COEFFS_DECODE_VERSION_ERROR;
+		return ERROR_CODE_COEFFS_DECODE_ILLEGAL_VERSION;
 	}
 
 	segment_count = Sensor_Coeffs_Read_16_Bit(&data[6]);
@@ -126,14 +126,14 @@ int Sensor_Coeffs_Decode(
 			|| (segment_count > SENSOR_COEFFS_FORMAT_MAX_SEGMENTS)
 	)
 	{
-		return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
+		return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
 	}
 
 	stored_crc = Sensor_Coeffs_Read_32_Bit(&data[data_length]);
 	calculated_crc = Sensor_Coeffs_CRC32(data, data_length);
 	if (stored_crc != calculated_crc)
 	{
-		return SENSOR_COEFFS_DECODE_CRC_ERROR;
+		return ERROR_CODE_COEFFS_DECODE_CRC;
 	}
 
 	read_position = SENSOR_COEFFS_FORMAT_HEADER_SIZE;
@@ -152,7 +152,7 @@ int Sensor_Coeffs_Decode(
 				) == 0
 		)
 		{
-			return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
+			return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
 		}
 
 		segment = &decoded_curve.segments[i];
@@ -169,7 +169,7 @@ int Sensor_Coeffs_Decode(
 
 		if (order > SENSOR_COEFFS_FORMAT_MAX_ORDER)
 		{
-			return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
+			return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
 		}
 
 		coefficient_size = (
@@ -181,7 +181,7 @@ int Sensor_Coeffs_Decode(
 				) == 0
 		)
 		{
-			return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
+			return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
 		}
 
 		for (uint32_t coefficient = 0; coefficient <= order; coefficient++)
@@ -197,10 +197,10 @@ int Sensor_Coeffs_Decode(
 
 	if (read_position != data_length)
 	{
-		return SENSOR_COEFFS_DECODE_FORMAT_ERROR;
+		return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
 	}
 
 	*curve = decoded_curve;
 
-	return SENSOR_COEFFS_DECODE_OK;
+	return ERROR_CODE_NONE;
 }

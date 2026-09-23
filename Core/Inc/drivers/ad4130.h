@@ -144,7 +144,7 @@ ErrorCode_t AD4130_Write(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		const uint8_t *data,
-		uint16_t len
+		uint16_t length
 );
 ErrorCode_t AD4130_Reset(uint8_t adc_device_id);
 

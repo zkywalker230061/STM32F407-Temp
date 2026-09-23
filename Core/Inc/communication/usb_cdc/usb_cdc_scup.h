@@ -3,25 +3,19 @@
 
 #include <stdint.h>
 
+#include "common/error_code.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define USB_CDC_SCUP_OK            0
-#define USB_CDC_SCUP_NOT_READY     1
-#define USB_CDC_SCUP_PARAM_ERROR  -1
-#define USB_CDC_SCUP_FORMAT_ERROR -2
-#define USB_CDC_SCUP_LENGTH_ERROR -3
-#define USB_CDC_SCUP_STATE_ERROR  -4
-
-
-int USB_CDC_SCUP_Receive(
+ErrorCode_t USB_CDC_SCUP_Receive(
 		const uint8_t *data,
 		uint32_t length
 );
 
-int USB_CDC_SCUP_Get_Data(
+ErrorCode_t USB_CDC_SCUP_Get_Data(
 		uint8_t *adc_device_id,
 		uint8_t *channel,
 		const uint8_t **binary_data,

@@ -26,42 +26,43 @@ static USB_CDC_Frame_t usb_cdc_frame;
 static volatile uint8_t usb_cdc_transmit_busy;
 
 volatile USB_CDC_Command_t usb_cdc_command;
+volatile ErrorCode_t usb_cdc_receive_error;
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 static void USB_CDC_Reset_Frame(void);
-static int USB_CDC_Identify_Frame(void);
-static int USB_CDC_Convert_SCUP_Result(int result);
+static ErrorCode_t USB_CDC_Identify_Frame(void);
 
 
-int USB_CDC_Initialize(void)
+void USB_CDC_Initialize(void)
 {
 	USB_CDC_Reset_Frame();
 	USB_CDC_SCUP_Reset();
 	usb_cdc_command = USB_CDC_COMMAND_NONE;
+	usb_cdc_receive_error = ERROR_CODE_NONE;
 	usb_cdc_transmit_busy = 0U;
-
-	return USB_CDC_OK;
 }
 
-int USB_CDC_Receive(
+ErrorCode_t USB_CDC_Receive(
 		const uint8_t *data,
 		uint32_t length
 )
 {
 	uint32_t data_index = 0U;
-	int result;
+	ErrorCode_t result;
 
 	if (data == NULL)
 	{
-		return USB_CDC_PARAM_ERROR;
+		usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_PARAM;
+		return usb_cdc_receive_error;
 	}
 
 	if (usb_cdc_frame == USB_CDC_FRAME_NONE)
 	{
 		if (usb_cdc_command != USB_CDC_COMMAND_NONE)
 		{
-			return USB_CDC_BUSY;
+			usb_cdc_receive_error = ERROR_CODE_USB_CDC_BUSY;
+			return usb_cdc_receive_error;
 		}
 
 		while (
@@ -76,14 +77,15 @@ int USB_CDC_Receive(
 
 		if (usb_cdc_magic_length < USB_CDC_MAGIC_SIZE)
 		{
-			return USB_CDC_NOT_READY;
+			return ERROR_CODE_USB_CDC_RECEIVING;
 		}
 
 		result = USB_CDC_Identify_Frame();
-		if (result != USB_CDC_OK)
+		if (result != ERROR_CODE_NONE)
 		{
 			USB_CDC_Reset_Frame();
-			return result;
+			usb_cdc_receive_error = result;
+			return usb_cdc_receive_error;
 		}
 
 		if (usb_cdc_frame == USB_CDC_FRAME_RSET)
@@ -91,20 +93,21 @@ int USB_CDC_Receive(
 			USB_CDC_Reset_Frame();
 			if (data_index < length)
 			{
-				return USB_CDC_LENGTH_ERROR;
+				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
+				return usb_cdc_receive_error;
 			}
 			usb_cdc_command = USB_CDC_COMMAND_RSET;
-			return USB_CDC_OK;
+			return ERROR_CODE_NONE;
 		}
 
 		if (usb_cdc_frame == USB_CDC_FRAME_SCUP)
 		{
 			result = USB_CDC_SCUP_Receive(usb_cdc_magic, USB_CDC_MAGIC_SIZE);
-			if (result != USB_CDC_SCUP_NOT_READY)
+			if (result != ERROR_CODE_COEFFS_TRANSFER_NOT_READY)
 			{
 				USB_CDC_Reset_Frame();
 				usb_cdc_command = USB_CDC_COMMAND_SCUP;
-				return USB_CDC_Convert_SCUP_Result(result);
+				return result;
 			}
 		}
 
@@ -113,10 +116,11 @@ int USB_CDC_Receive(
 			USB_CDC_Reset_Frame();
 			if (data_index < length)
 			{
-				return USB_CDC_LENGTH_ERROR;
+				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
+				return usb_cdc_receive_error;
 			}
 			usb_cdc_command = USB_CDC_COMMAND_CRSC;
-			return USB_CDC_OK;
+			return ERROR_CODE_NONE;
 		}
 
 		if (usb_cdc_frame == USB_CDC_FRAME_LOGE)
@@ -124,10 +128,11 @@ int USB_CDC_Receive(
 			USB_CDC_Reset_Frame();
 			if (data_index < length)
 			{
-				return USB_CDC_LENGTH_ERROR;
+				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
+				return usb_cdc_receive_error;
 			}
 			usb_cdc_command = USB_CDC_COMMAND_LOGE;
-			return USB_CDC_OK;
+			return ERROR_CODE_NONE;
 		}
 
 		if (usb_cdc_frame == USB_CDC_FRAME_LOGD)
@@ -135,26 +140,27 @@ int USB_CDC_Receive(
 			USB_CDC_Reset_Frame();
 			if (data_index < length)
 			{
-				return USB_CDC_LENGTH_ERROR;
+				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
+				return usb_cdc_receive_error;
 			}
 			usb_cdc_command = USB_CDC_COMMAND_LOGD;
-			return USB_CDC_OK;
+			return ERROR_CODE_NONE;
 		}
 	}
 
 	if (data_index == length)
 	{
-		return USB_CDC_NOT_READY;
+		return ERROR_CODE_COEFFS_TRANSFER_NOT_READY;
 	}
 
 	result = USB_CDC_SCUP_Receive(&data[data_index], length-data_index);
-	if (result != USB_CDC_SCUP_NOT_READY)
+	if (result != ERROR_CODE_COEFFS_TRANSFER_NOT_READY)
 	{
 		USB_CDC_Reset_Frame();
 		usb_cdc_command = USB_CDC_COMMAND_SCUP;
 	}
 
-	return USB_CDC_Convert_SCUP_Result(result);
+	return result;
 }
 
 static void USB_CDC_Reset_Frame(void)
@@ -163,7 +169,7 @@ static void USB_CDC_Reset_Frame(void)
 	usb_cdc_frame = USB_CDC_FRAME_NONE;
 }
 
-static int USB_CDC_Identify_Frame(void)
+static ErrorCode_t USB_CDC_Identify_Frame(void)
 {
 	if (
 			(usb_cdc_magic[0] == 'R')
@@ -173,7 +179,7 @@ static int USB_CDC_Identify_Frame(void)
 	)
 	{
 		usb_cdc_frame = USB_CDC_FRAME_RSET;
-		return USB_CDC_OK;
+		return ERROR_CODE_NONE;
 	}
 
 	if (
@@ -184,7 +190,7 @@ static int USB_CDC_Identify_Frame(void)
 	)
 	{
 		usb_cdc_frame = USB_CDC_FRAME_SCUP;
-		return USB_CDC_OK;
+		return ERROR_CODE_NONE;
 	}
 
 	if (
@@ -195,7 +201,7 @@ static int USB_CDC_Identify_Frame(void)
 	)
 	{
 		usb_cdc_frame = USB_CDC_FRAME_CRSC;
-		return USB_CDC_OK;
+		return ERROR_CODE_NONE;
 	}
 
 	if (
@@ -206,7 +212,7 @@ static int USB_CDC_Identify_Frame(void)
 	)
 	{
 		usb_cdc_frame = USB_CDC_FRAME_LOGE;
-		return USB_CDC_OK;
+		return ERROR_CODE_NONE;
 	}
 
 	if (
@@ -217,40 +223,13 @@ static int USB_CDC_Identify_Frame(void)
 	)
 	{
 		usb_cdc_frame = USB_CDC_FRAME_LOGD;
-		return USB_CDC_OK;
+		return ERROR_CODE_NONE;
 	}
 
-	return USB_CDC_FORMAT_ERROR;
+	return ERROR_CODE_USB_CDC_ILLEGAL_FORMAT;
 }
 
-static int USB_CDC_Convert_SCUP_Result(int result)
-{
-	switch (result)
-	{
-		case USB_CDC_SCUP_OK:
-			return USB_CDC_OK;
-
-		case USB_CDC_SCUP_NOT_READY:
-			return USB_CDC_NOT_READY;
-
-		case USB_CDC_SCUP_PARAM_ERROR:
-			return USB_CDC_PARAM_ERROR;
-
-		case USB_CDC_SCUP_FORMAT_ERROR:
-			return USB_CDC_FORMAT_ERROR;
-
-		case USB_CDC_SCUP_LENGTH_ERROR:
-			return USB_CDC_LENGTH_ERROR;
-
-		case USB_CDC_SCUP_STATE_ERROR:
-			return USB_CDC_BUSY;
-
-		default:
-			return USB_CDC_FORMAT_ERROR;
-	}
-}
-
-int USB_CDC_Transmit(
+ErrorCode_t USB_CDC_Transmit(
 		const uint8_t *data,
 		uint16_t length
 )
@@ -259,27 +238,27 @@ int USB_CDC_Transmit(
 
 	if ((data == NULL) || (length == 0U))
 	{
-		return USB_CDC_PARAM_ERROR;
+		return ERROR_CODE_USB_CDC_ILLEGAL_PARAM;
 	}
 
 	if (USB_CDC_Transmit_Ready() == 0U)
 	{
-		return USB_CDC_NOT_READY;
+		return ERROR_CODE_USB_CDC_NOT_READY;
 	}
 
 	usb_cdc_transmit_busy = 1U;
 	result = CDC_Transmit_FS((uint8_t *)data, length);
 	if (result == USBD_OK)
 	{
-		return USB_CDC_OK;
+		return ERROR_CODE_NONE;
 	}
 	usb_cdc_transmit_busy = 0U;
 	if (result == USBD_BUSY)
 	{
-		return USB_CDC_BUSY;
+		return ERROR_CODE_USB_CDC_BUSY;
 	}
 
-	return USB_CDC_TRANSMIT_ERROR;
+	return ERROR_CODE_USB_CDC_TRANSMIT;
 }
 
 uint8_t USB_CDC_Transmit_Ready(void)

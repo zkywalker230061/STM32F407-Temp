@@ -323,7 +323,7 @@ ErrorCode_t AD4130_Write(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		const uint8_t *data,
-		uint16_t len
+		uint16_t length
 )
 {
 	AD4130Device_t *device;
@@ -341,19 +341,19 @@ ErrorCode_t AD4130_Write(
 		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
 
-	if ((len == 0U) || (len > 3U))
+	if ((length == 0U) || (length > 3U))
 	{
 		return ERROR_CODE_AD4130_ILLEGAL_WRITE_LENGTH;
 	}
 
 	tx[0] = reg_addr & 0x3FU;  /*  0b00RS[5:0], COMMS write*/
-	for (uint16_t i = 0; i < len; i++)
+	for (uint16_t i = 0; i < length; i++)
 	{
 		tx[i + 1U] = data[i];
 	}
 
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_RESET);
-	status = HAL_SPI_Transmit(device->hspi, tx, len+1U, HAL_MAX_DELAY);
+	status = HAL_SPI_Transmit(device->hspi, tx, length+1U, HAL_MAX_DELAY);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 
 	if (status == HAL_OK)

@@ -27,15 +27,24 @@ static uint8_t usb_comm_reset_pending;
 static void usb_comm_reset_transmit(void);
 
 
-int usb_comm_process(void)
+ErrorCode_t usb_comm_process(void)
 {
 	USB_CDC_Command_t command;
 	uint8_t batch_count;
 	uint8_t batch_read_index;
 	uint16_t batch_length;
 	uint16_t message_length;
-	int command_result;
-	int transmit_result;
+	ErrorCode_t command_result;
+	ErrorCode_t transmit_result;
+	ErrorCode_t receive_error;
+
+	receive_error = usb_cdc_receive_error;
+	if (receive_error != ERROR_CODE_NONE)
+	{
+		usb_cdc_receive_error = ERROR_CODE_NONE;
+		printf("%d: USB CDC receive error\r\n", (int)receive_error);
+		return receive_error;
+	}
 
 	/* if reset */
 	if (usb_comm_reset_pending != 0U)
@@ -55,46 +64,50 @@ int usb_comm_process(void)
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			printf("System reset\r\n");
 			usb_comm_reset_pending = 1U;
-			command_result = USB_COMM_OK;
+			command_result = ERROR_CODE_NONE;
 			break;
 		}
 
 		case USB_CDC_COMMAND_SCUP:
 		{
-			int coeffs_result;
+			ErrorCode_t coeffs_result;
 
 			coeffs_result = sensor_coeffs_process();
-			if (coeffs_result == SENSOR_COEFFS_NOT_READY)
+			if (coeffs_result == ERROR_CODE_COEFFS_TRANSFER_NOT_READY)
 			{
-				command_result = USB_COMM_NOT_READY;
+				command_result = coeffs_result;
 				break;
 			}
 
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			if (coeffs_result == SENSOR_COEFFS_UPDATED)
+			if (coeffs_result == ERROR_CODE_NONE)
 			{
 				printf("Sensor coefficients updated\r\n");
 				usb_comm_reset_pending = 1U;
-				command_result = USB_COMM_OK;
+				command_result = ERROR_CODE_NONE;
 				break;
 			}
-			return USB_COMM_COEFFS_ERROR;
+			return coeffs_result;
 		}
 
 		case USB_CDC_COMMAND_CRSC:
 		{
-			int storage_result;
+			ErrorCode_t storage_result;
 
 			storage_result = Sensor_Coeffs_Storage_Erase();
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			if (storage_result == SENSOR_COEFFS_STORAGE_OK)
+			if (storage_result != ERROR_CODE_NONE)
 			{
-				printf("Sensor coefficients cleared\r\n");
-				usb_comm_reset_pending = 1U;
-				command_result = USB_COMM_OK;
-				break;
+				printf(
+						"%d: Sensor coefficients storage erase error\r\n",
+						(int)storage_result
+				);
+				return storage_result;
 			}
-			return USB_COMM_COEFFS_ERROR;
+			printf("Sensor coefficients cleared\r\n");
+			usb_comm_reset_pending = 1U;
+			command_result = ERROR_CODE_NONE;
+			break;
 		}
 
 		case USB_CDC_COMMAND_LOGE:
@@ -102,7 +115,7 @@ int usb_comm_process(void)
 			usb_comm_measurement_log_enable = 1U;
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			printf("Measurement log enabled\r\n");
-			command_result = USB_COMM_OK;
+			command_result = ERROR_CODE_NONE;
 			break;
 		}
 
@@ -111,20 +124,24 @@ int usb_comm_process(void)
 			usb_comm_measurement_log_enable = 0U;
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			printf("Measurement log disabled\r\n");
-			command_result = USB_COMM_OK;
+			command_result = ERROR_CODE_NONE;
 			break;
 		}
 
 		case USB_CDC_COMMAND_NONE:
 		{
-			command_result = USB_COMM_NOT_READY;
+			command_result = ERROR_CODE_USB_COMM_NOT_READY;
 			break;
 		}
 
 		default:
 		{
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			return USB_COMM_COMMAND_ERROR;
+			printf(
+					"%d: USB communication command error\r\n",
+					(int)ERROR_CODE_USB_COMM_ILLEGAL_COMMAND
+			);
+			return ERROR_CODE_USB_COMM_ILLEGAL_COMMAND;
 		}
 	}
 
@@ -187,22 +204,22 @@ int usb_comm_process(void)
 			usb_comm_tx_batch,
 			batch_length
 	);
-	if (transmit_result == USB_CDC_OK)
+	if (transmit_result != ERROR_CODE_NONE)
 	{
-		usb_comm_tx_transmitting = 1U;
-		usb_comm_tx_read_index = batch_read_index;
-		usb_comm_tx_count -= batch_count;
-		return USB_COMM_OK;
+		if (
+				(transmit_result == ERROR_CODE_USB_CDC_NOT_READY)
+				|| (transmit_result == ERROR_CODE_USB_CDC_BUSY)
+		)
+		{
+			return command_result;
+		}
+		printf("%d: USB CDC transmit error\r\n", (int)transmit_result);
+		return transmit_result;
 	}
-	if (
-			(transmit_result == USB_CDC_NOT_READY)
-			|| (transmit_result == USB_CDC_BUSY)
-	)
-	{
-		return command_result;
-	}
-
-	return USB_COMM_TRANSMIT_ERROR;
+	usb_comm_tx_transmitting = 1U;
+	usb_comm_tx_read_index = batch_read_index;
+	usb_comm_tx_count -= batch_count;
+	return ERROR_CODE_NONE;
 }
 
 uint8_t usb_comm_measurement_log_enabled(void)
@@ -210,26 +227,26 @@ uint8_t usb_comm_measurement_log_enabled(void)
 	return usb_comm_measurement_log_enable;
 }
 
-int usb_comm_write(
+ErrorCode_t usb_comm_write(
 		const uint8_t *data,
 		uint16_t length
 )
 {
 	if (data == NULL)
 	{
-		return USB_COMM_PARAM_ERROR;
+		return ERROR_CODE_USB_COMM_ILLEGAL_PARAM;
 	}
 	if ((length == 0U) || (length > USB_COMM_TX_BUFFER_SIZE))
 	{
-		return USB_COMM_LENGTH_ERROR;
+		return ERROR_CODE_USB_COMM_ILLEGAL_LENGTH;
 	}
 	if (USB_CDC_Transmit_Ready() == 0U)
 	{
-		return USB_COMM_NOT_READY;
+		return ERROR_CODE_USB_COMM_NOT_READY;
 	}
 	if (usb_comm_tx_count >= USB_COMM_TX_BUFFER_COUNT)
 	{
-		return USB_COMM_BUSY;
+		return ERROR_CODE_USB_COMM_TRANSMIT_BUSY;
 	}
 
 	for (uint16_t i = 0U; i < length; i++)
@@ -244,7 +261,7 @@ int usb_comm_write(
 	}
 	usb_comm_tx_count++;
 
-	return USB_COMM_OK;
+	return ERROR_CODE_NONE;
 }
 
 static void usb_comm_reset_transmit(void)

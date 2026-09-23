@@ -12,6 +12,8 @@ int _write(
 		int length
 )
 {
+	ErrorCode_t result;
+
 	(void)file;
 
 	if ((data == NULL) || (length <= 0))
@@ -19,6 +21,14 @@ int _write(
 		return 0;
 	}
 
-	(void)usb_comm_write((const uint8_t *)data, (uint16_t)length);
+	result = usb_comm_write((const uint8_t *)data, (uint16_t)length);
+	if (
+			(result != ERROR_CODE_NONE)
+			&& (result != ERROR_CODE_USB_COMM_NOT_READY)
+	)
+	{
+		return 0;
+	}
+
 	return length;
 }

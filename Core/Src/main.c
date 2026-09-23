@@ -111,9 +111,9 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
-	int usb_result;
+	ErrorCode_t usb_result;
 	ErrorCode_t adc_result;
-	int coeffs_result;
+	ErrorCode_t coeffs_result;
 	ErrorCode_t read_result;
 	eMBErrorCode modbus_rtu_result;
 
@@ -124,8 +124,8 @@ int main(void)
 	adc_result = sensor_adc_initialize();
 	usb_result = usb_comm_process();
 	if (
-			(usb_result != USB_COMM_OK)
-			&& (usb_result != USB_COMM_NOT_READY)
+			(usb_result != ERROR_CODE_NONE)
+			&& (usb_result != ERROR_CODE_USB_COMM_NOT_READY)
 	)
 	{
 		Error_Handler();
@@ -140,7 +140,15 @@ int main(void)
 
 	/* sensor_coeffs: load, decode */
 	coeffs_result = sensor_coeffs_initialize();
-	if (coeffs_result != SENSOR_COEFFS_OK)
+	usb_result = usb_comm_process();
+	if (
+			(usb_result != ERROR_CODE_NONE)
+			&& (usb_result != ERROR_CODE_USB_COMM_NOT_READY)
+	)
+	{
+		Error_Handler();
+	}
+	if (coeffs_result != ERROR_CODE_NONE)
 	{
 		Error_Handler();
 	}
@@ -174,16 +182,6 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-		/* USB communication process */
-		usb_result = usb_comm_process();
-		if (
-				(usb_result != USB_COMM_OK)
-				&& (usb_result != USB_COMM_NOT_READY)
-		)
-		{
-			Error_Handler();
-		}
-
 		/* Modbus RTU poll */
 		modbus_rtu_result = eMBPoll();
 		if (modbus_rtu_result != MB_ENOERR)
@@ -199,6 +197,17 @@ int main(void)
 		if (
 				(read_result != ERROR_CODE_NONE)
 				&& (read_result != ERROR_CODE_MEASUREMENT_NOT_READY)
+		)
+		{
+			Error_Handler();
+		}
+
+		/* USB communication process */
+		usb_result = usb_comm_process();
+		if (
+				(usb_result != ERROR_CODE_NONE)
+				&& (usb_result != ERROR_CODE_USB_COMM_NOT_READY)
+				&& (usb_result != ERROR_CODE_COEFFS_TRANSFER_NOT_READY)
 		)
 		{
 			Error_Handler();
@@ -264,9 +273,13 @@ static ErrorCode_t read_sensor(void)
 	float measured_temperature;
 	uint8_t read_count = 0U;
 
-	for (uint8_t i = 0; i < 2U; i++)
+	for (uint8_t adc_device_id = 1U; adc_device_id <= 2U; adc_device_id++)
 	{
-		result = AD4130_Read_Resistance(i+1U, &channel, &measured_resistance);
+		result = AD4130_Read_Resistance(
+				adc_device_id,
+				&channel,
+				&measured_resistance
+		);
 		if (result == ERROR_CODE_MEASUREMENT_NOT_READY)
 		{
 			continue;
@@ -276,7 +289,7 @@ static ErrorCode_t read_sensor(void)
 			printf(
 					"%d: ADC %u read error\r\n",
 					(int)result,
-					(unsigned int)(i+1U)
+					(unsigned int)adc_device_id
 			);
 			return result;
 		}
@@ -284,7 +297,7 @@ static ErrorCode_t read_sensor(void)
 		/* sensor_fit: temperature fit */
 		fit_result = resistance_to_temperature(
 				measured_resistance,
-				sensor_coeffs_get_curve(i+1U, channel),
+				sensor_coeffs_get_curve(adc_device_id, channel),
 				&measured_temperature
 		);
 		if (fit_result != ERROR_CODE_NONE)
@@ -292,16 +305,16 @@ static ErrorCode_t read_sensor(void)
 			printf(
 					"%d: ADC %u CHANNEL_%u fit error\r\n",
 					(int)fit_result,
-					(unsigned int)(i+1U),
+					(unsigned int)adc_device_id,
 					(unsigned int)channel
 			);
 			return fit_result;
 		}
 
-		resistance[i][channel] = measured_resistance;
-		temperature[i][channel] = measured_temperature;
+		resistance[adc_device_id - 1U][channel] = measured_resistance;
+		temperature[adc_device_id - 1U][channel] = measured_temperature;
 		vMBRegInputUpdate(
-				i,
+				adc_device_id-1U,
 				channel,
 				measured_resistance,
 				measured_temperature
@@ -312,10 +325,10 @@ static ErrorCode_t read_sensor(void)
 		{
 			printf(
 					"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
-					(unsigned int)(i+1U),
+					(unsigned int)adc_device_id,
 					(unsigned int)(channel+1U),
-					(double)resistance[i][channel],
-					(double)temperature[i][channel]
+					(double)resistance[adc_device_id - 1U][channel],
+					(double)temperature[adc_device_id - 1U][channel]
 			);
 		}
 		/* HAL_Delay(1000); */
