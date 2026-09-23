@@ -20,17 +20,17 @@ ErrorCode_t sensor_adc_initialize(void)
 		{
 			por_detected = 1U;
 			printf(
-					"ADC %u POR detected during initialization: %d\r\n",
-					(unsigned int)(i+1U),
-					(int)result
+					"%d: ADC %u POR during initialization\r\n",
+					(int)result,
+					(unsigned int)(i+1U)
 			);
 		}
 		else if (result != ERROR_CODE_NONE)
 		{
 			printf(
-					"ADC %u initialization failed: %d\r\n",
-					(unsigned int)(i+1U),
-					(int)result
+					"%d: ADC %u initialization error\r\n",
+					(int)result,
+					(unsigned int)(i+1U)
 			);
 			return result;
 		}
@@ -52,10 +52,10 @@ ErrorCode_t sensor_adc_initialize(void)
 		if (init_result[i].id != 0x05U)
 		{
 			printf(
-					"ADC %u ID mismatch: expected 0x05, received 0x%02X, error code %d\r\n",
+					"%d: ADC %u ID mismatch - expected 0x05, received 0x%02X\r\n",
+					(int)ERROR_CODE_AD4130_ID_MISMATCH,
 					(unsigned int)(i+1U),
-					(unsigned int)init_result[i].id,
-					(int)ERROR_CODE_AD4130_ID_MISMATCH
+					(unsigned int)init_result[i].id
 			);
 			return ERROR_CODE_AD4130_ID_MISMATCH;
 		}
@@ -73,9 +73,9 @@ ErrorCode_t sensor_adc_initialize(void)
 		if (result != ERROR_CODE_NONE)
 		{
 			printf(
-					"ADC %u CHANNEL_0 setup failed: %d\r\n",
-					(unsigned int)(i+1U),
-					(int)result
+					"%d: ADC %u CHANNEL_0 setup error\r\n",
+					(int)result,
+					(unsigned int)(i+1U)
 			);
 			return result;
 		}
@@ -84,9 +84,9 @@ ErrorCode_t sensor_adc_initialize(void)
 //		if (result != ERROR_CODE_NONE)
 //		{
 //			printf(
-//					"ADC %u CHANNEL_1 setup failed: %d\r\n",
-//					(unsigned int)(i+1U),
-//					(int)result
+//					"%d: ADC %u CHANNEL_1 setup error\r\n",
+//					(int)result,
+//					(unsigned int)(i+1U)
 //			);
 //			return result;
 //		}
@@ -95,9 +95,9 @@ ErrorCode_t sensor_adc_initialize(void)
 //		if (result != ERROR_CODE_NONE)
 //		{
 //			printf(
-//					"ADC %u CHANNEL_2 setup failed: %d\r\n",
-//					(unsigned int)(i+1U),
-//					(int)result
+//					"%d: ADC %u CHANNEL_2 setup error\r\n",
+//					(int)result,
+//					(unsigned int)(i+1U)
 //			);
 //			return result;
 //		}
@@ -106,9 +106,9 @@ ErrorCode_t sensor_adc_initialize(void)
 //		if (result != ERROR_CODE_NONE)
 //		{
 //			printf(
-//					"ADC %u CHANNEL_3 setup failed: %d\r\n",
-//					(unsigned int)(i+1U),
-//					(int)result
+//					"%d: ADC %u CHANNEL_3 setup error\r\n",
+//					(int)result,
+//					(unsigned int)(i+1U)
 //			);
 //			return result;
 //		}

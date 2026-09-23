@@ -10,11 +10,13 @@
 #include "storage/sensor_coeffs_storage.h"
 
 
-#define USB_COMM_TX_BUFFER_COUNT 8U
+#define USB_COMM_TX_BUFFER_COUNT 32U
 #define USB_COMM_TX_BUFFER_SIZE  256U
+#define USB_COMM_TX_BATCH_SIZE   (USB_COMM_TX_BUFFER_COUNT * USB_COMM_TX_BUFFER_SIZE)
 
 static uint8_t usb_comm_tx_buffer[USB_COMM_TX_BUFFER_COUNT][USB_COMM_TX_BUFFER_SIZE];
 static uint16_t usb_comm_tx_length[USB_COMM_TX_BUFFER_COUNT];
+static uint8_t usb_comm_tx_batch[USB_COMM_TX_BATCH_SIZE];
 static uint8_t usb_comm_tx_read_index;
 static uint8_t usb_comm_tx_write_index;
 static uint8_t usb_comm_tx_count;
@@ -28,6 +30,10 @@ static void usb_comm_reset_transmit(void);
 int usb_comm_process(void)
 {
 	USB_CDC_Command_t command;
+	uint8_t batch_count;
+	uint8_t batch_read_index;
+	uint16_t batch_length;
+	uint16_t message_length;
 	int command_result;
 	int transmit_result;
 
@@ -137,12 +143,6 @@ int usb_comm_process(void)
 		}
 
 		usb_comm_tx_transmitting = 0U;
-		usb_comm_tx_read_index++;
-		if (usb_comm_tx_read_index >= USB_COMM_TX_BUFFER_COUNT)
-		{
-			usb_comm_tx_read_index = 0U;
-		}
-		usb_comm_tx_count--;
 	}
 
 	if (usb_comm_tx_count == 0U)
@@ -154,13 +154,40 @@ int usb_comm_process(void)
 		return command_result;
 	}
 
+	batch_count = 0U;
+	batch_read_index = usb_comm_tx_read_index;
+	batch_length = 0U;
+	while (batch_count < usb_comm_tx_count)
+	{
+		message_length = usb_comm_tx_length[batch_read_index];
+		if (message_length > (USB_COMM_TX_BATCH_SIZE - batch_length))
+		{
+			break;
+		}
+
+		for (uint16_t i = 0U; i < message_length; i++)
+		{
+			usb_comm_tx_batch[batch_length + i] =
+					usb_comm_tx_buffer[batch_read_index][i];
+		}
+		batch_length += message_length;
+		batch_count++;
+		batch_read_index++;
+		if (batch_read_index >= USB_COMM_TX_BUFFER_COUNT)
+		{
+			batch_read_index = 0U;
+		}
+	}
+
 	transmit_result = USB_CDC_Transmit(
-			usb_comm_tx_buffer[usb_comm_tx_read_index],
-			usb_comm_tx_length[usb_comm_tx_read_index]
+			usb_comm_tx_batch,
+			batch_length
 	);
 	if (transmit_result == USB_CDC_OK)
 	{
 		usb_comm_tx_transmitting = 1U;
+		usb_comm_tx_read_index = batch_read_index;
+		usb_comm_tx_count -= batch_count;
 		return USB_COMM_OK;
 	}
 	if (

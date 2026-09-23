@@ -111,15 +111,24 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
+	int usb_result;
 	ErrorCode_t adc_result;
 	int coeffs_result;
-	int usb_result;
 	eMBErrorCode modbus_rtu_result;
 	int read_result;
 
+	HAL_Delay(2000);
 
 	/* sensor_adc: ADC initialize */
 	adc_result = sensor_adc_initialize();
+	usb_result = usb_comm_process();
+	if (
+			(usb_result != USB_COMM_OK)
+			&& (usb_result != USB_COMM_NOT_READY)
+	)
+	{
+		Error_Handler();
+	}
 	if (
 			(adc_result != ERROR_CODE_NONE)
 			&& (adc_result != ERROR_CODE_MEASUREMENT_STATUS_POR)
@@ -264,9 +273,9 @@ static int read_sensor(void)
 		if (result != ERROR_CODE_NONE)
 		{
 			printf(
-					"ADC %u read incorrect: %d\r\n",
-					(unsigned int)(i+1U),
-					(int)result
+					"%d: ADC %u read error\r\n",
+					(int)result,
+					(unsigned int)(i+1U)
 			);
 			return result;
 		}
@@ -280,10 +289,10 @@ static int read_sensor(void)
 		if (fit_result != ERROR_CODE_NONE)
 		{
 			printf(
-					"ADC %u CHANNEL_%u fit incorrect: %d\r\n",
+					"%d: ADC %u CHANNEL_%u fit error\r\n",
+					(int)fit_result,
 					(unsigned int)(i+1U),
-					(unsigned int)channel,
-					fit_result
+					(unsigned int)channel
 			);
 			return fit_result;
 		}

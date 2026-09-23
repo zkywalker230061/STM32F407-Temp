@@ -51,10 +51,10 @@ int sensor_coeffs_initialize(void)
 			if (storage_result != SENSOR_COEFFS_STORAGE_OK)
 			{
 				printf(
-						"ADC %u CHANNEL_%u storage load error: %d\r\n",
+						"%d: ADC %u CHANNEL_%u storage load error\r\n",
+						storage_result,
 						(unsigned int)adc_device_id,
-						(unsigned int)channel_id,
-						storage_result
+						(unsigned int)channel_id
 				);
 				result = SENSOR_COEFFS_STORAGE_LOAD_ERROR;
 				continue;
@@ -69,10 +69,10 @@ int sensor_coeffs_initialize(void)
 			if (decode_result != SENSOR_COEFFS_DECODE_OK)
 			{
 				printf(
-						"ADC %u CHANNEL_%u decode error: %d\r\n",
+						"%d: ADC %u CHANNEL_%u decode error\r\n",
+						decode_result,
 						(unsigned int)adc_device_id,
-						(unsigned int)channel_id,
-						decode_result
+						(unsigned int)channel_id
 				);
 				result = SENSOR_COEFFS_DECODE_ERROR;
 				continue;
@@ -116,7 +116,7 @@ int sensor_coeffs_process(void)
 	if (transfer_result != USB_CDC_SCUP_OK)
 	{
 		printf(
-				"Sensor coefficients transfer error: %d\r\n",
+				"%d: Sensor coefficients transfer error\r\n",
 				transfer_result
 		);
 		USB_CDC_SCUP_Reset();
@@ -132,10 +132,10 @@ int sensor_coeffs_process(void)
 	if (decode_result != SENSOR_COEFFS_DECODE_OK)
 	{
 		printf(
-				"ADC %u CHANNEL_%u decode error: %d\r\n",
+				"%d: ADC %u CHANNEL_%u decode error\r\n",
+				decode_result,
 				(unsigned int)adc_device_id,
-				(unsigned int)channel_id,
-				decode_result
+				(unsigned int)channel_id
 		);
 		USB_CDC_SCUP_Reset();
 		return SENSOR_COEFFS_DECODE_ERROR;
@@ -168,10 +168,10 @@ int sensor_coeffs_process(void)
 	if (storage_result != SENSOR_COEFFS_STORAGE_OK)
 	{
 		printf(
-				"ADC %u CHANNEL_%u storage save error: %d\r\n",
+				"%d: ADC %u CHANNEL_%u storage save error\r\n",
+				storage_result,
 				(unsigned int)adc_device_id,
-				(unsigned int)channel_id,
-				storage_result
+				(unsigned int)channel_id
 		);
 		USB_CDC_SCUP_Reset();
 		return SENSOR_COEFFS_STORAGE_SAVE_ERROR;
@@ -237,10 +237,10 @@ static int sensor_coeffs_copy_flash_to_ram(void)
 			if (storage_result != SENSOR_COEFFS_STORAGE_OK)
 			{
 				printf(
-						"ADC %u CHANNEL_%u storage copy to RAM error: %d\r\n",
+						"%d: ADC %u CHANNEL_%u storage copy to RAM error\r\n",
+						storage_result,
 						(unsigned int)adc_device_id,
-						(unsigned int)channel_id,
-						storage_result
+						(unsigned int)channel_id
 				);
 				return SENSOR_COEFFS_STORAGE_LOAD_ERROR;
 			}
@@ -282,10 +282,10 @@ static int sensor_coeffs_copy_ram_to_flash(void)
 			if (storage_result != SENSOR_COEFFS_STORAGE_OK)
 			{
 				printf(
-						"ADC %u CHANNEL_%u storage copy to FLASH error: %d\r\n",
+						"%d: ADC %u CHANNEL_%u storage copy to FLASH error\r\n",
+						storage_result,
 						(unsigned int)adc_device_id,
-						(unsigned int)channel_id,
-						storage_result
+						(unsigned int)channel_id
 				);
 				return SENSOR_COEFFS_STORAGE_SAVE_ERROR;
 			}
@@ -312,7 +312,7 @@ static int sensor_coeffs_compact_flash(void)
 	if (storage_result != SENSOR_COEFFS_STORAGE_OK)
 	{
 		printf(
-				"Sensor coefficients storage erase error: %d\r\n",
+				"%d: Sensor coefficients storage erase error\r\n",
 				storage_result
 		);
 		return SENSOR_COEFFS_STORAGE_SAVE_ERROR;
