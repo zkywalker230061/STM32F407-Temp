@@ -66,7 +66,7 @@ static float temperature[2][4];
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-static int read_sensor(void);
+static ErrorCode_t read_sensor(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -114,8 +114,9 @@ int main(void)
 	int usb_result;
 	ErrorCode_t adc_result;
 	int coeffs_result;
+	ErrorCode_t read_result;
 	eMBErrorCode modbus_rtu_result;
-	int read_result;
+
 
 	HAL_Delay(2000);
 
@@ -254,7 +255,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-static int read_sensor(void)
+static ErrorCode_t read_sensor(void)
 {
 	ErrorCode_t result;
 	ErrorCode_t fit_result;

@@ -37,6 +37,7 @@ int usb_comm_process(void)
 	int command_result;
 	int transmit_result;
 
+	/* if reset */
 	if (usb_comm_reset_pending != 0U)
 	{
 		command = USB_CDC_COMMAND_NONE;
@@ -45,6 +46,8 @@ int usb_comm_process(void)
 	{
 		command = usb_cdc_command;
 	}
+
+	/* process received */
 	switch (command)
 	{
 		case USB_CDC_COMMAND_RSET:
@@ -125,6 +128,7 @@ int usb_comm_process(void)
 		}
 	}
 
+	/* process transmit */
 	if (USB_CDC_Transmit_Ready() == 0U)
 	{
 		usb_comm_reset_transmit();
