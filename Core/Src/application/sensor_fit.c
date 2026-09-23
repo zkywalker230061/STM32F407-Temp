@@ -7,14 +7,18 @@
 #include "storage/sensor_coeffs.inc"
 
 
-static int resistance_to_temperature_from_inc(
+static ErrorCode_t resistance_to_temperature_from_inc(
 		float resistance,
 		float *temperature
 )
 {
-	if ((resistance <= 0.0f) || (temperature == NULL))
+	if (temperature == NULL)
 	{
-		return SENSOR_FIT_PARAM_ERROR;
+		return ERROR_CODE_SENSOR_FIT_ILLEGAL_PARAM;
+	}
+	if ((!isfinite(resistance)) || (resistance <= 0.0f))
+	{
+		return ERROR_CODE_SENSOR_FIT_ILLEGAL_RESISTANCE;
 	}
 	*temperature = 0.0f;
 
@@ -28,25 +32,26 @@ static int resistance_to_temperature_from_inc(
 					segments[i].coeffs, segments[i].order
 			);
 
-			return SENSOR_FIT_OK;
+			return ERROR_CODE_NONE;
 		}
 	}
 
-	return SENSOR_FIT_RANGE_ERROR;
+	return ERROR_CODE_SENSOR_FIT_RANGE;
 }
 
-static int resistance_to_temperature_from_curve(
+static ErrorCode_t resistance_to_temperature_from_curve(
 		float resistance,
 		const Curve_t *curve,
 		float *temperature
 )
 {
-	if (
-			(resistance <= 0.0f) || (curve == NULL)
-			|| (temperature == NULL)
-	)
+	if ((curve == NULL) || (temperature == NULL))
 	{
-		return SENSOR_FIT_PARAM_ERROR;
+		return ERROR_CODE_SENSOR_FIT_ILLEGAL_PARAM;
+	}
+	if ((!isfinite(resistance)) || (resistance <= 0.0f))
+	{
+		return ERROR_CODE_SENSOR_FIT_ILLEGAL_RESISTANCE;
 	}
 	*temperature = 0.0f;
 
@@ -65,14 +70,14 @@ static int resistance_to_temperature_from_curve(
 					curve->segments[i].order
 			);
 
-			return SENSOR_FIT_OK;
+			return ERROR_CODE_NONE;
 		}
 	}
 
-	return SENSOR_FIT_RANGE_ERROR;
+	return ERROR_CODE_SENSOR_FIT_RANGE;
 }
 
-int resistance_to_temperature(
+ErrorCode_t resistance_to_temperature(
 		float resistance,
 		const Curve_t *curve,
 		float *temperature

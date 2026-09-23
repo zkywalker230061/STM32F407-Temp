@@ -11,21 +11,21 @@
 										           /* 7.5 mV at 10 µA */
 #define AD4130_DATA_100NA_OVER_RANGE	0xF33333U  /* 95% */
 
-static int AD4130_Get_Autorange_Level(
+static ErrorCode_t AD4130_Get_Autorange_Level(
 		uint8_t current_level,
 		uint32_t data,
 		uint8_t *new_level
 );
 
 
-int AD4130_Read_Resistance(
+ErrorCode_t AD4130_Read_Resistance(
 		uint8_t adc_device_id,
 		uint8_t *channel,
 		float *resistance
 )
 {
-	AD4130Result_t result;
-	int autorange_result;
+	ErrorCode_t result;
+	ErrorCode_t autorange_result;
 	uint32_t data_status = 0;
 	uint32_t data = 0;
 	uint8_t status = 0;
@@ -34,41 +34,39 @@ int AD4130_Read_Resistance(
 	uint8_t iout_level;
 	uint8_t new_iout_level;
 
-	if (
-			(adc_device_id < 1U) || (adc_device_id > 2U)
-			|| (channel == NULL) || (resistance == NULL)
-	)
+	if ((adc_device_id < 1U) || (adc_device_id > 2U))
 	{
-		return AD4130_MEASUREMENT_PARAM_ERROR;
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
+	}
+	if ((channel == NULL) || (resistance == NULL))
+	{
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
 	}
 	*channel = 0xFFU;
 	*resistance = 0.0f;
 
 	result = AD4130_Read_32_Bit(adc_device_id, AD4130_DATA, &data_status);
-	if (result == AD4130_RESULT_TIMEOUT)
+	if (result != ERROR_CODE_NONE)
 	{
-		return AD4130_MEASUREMENT_TIMEOUT;
-	}
-	if (result != AD4130_RESULT_OK)
-	{
-		return AD4130_MEASUREMENT_COMM_ERROR;
+		return result;
 	}
 
 	status = data_status & 0xFFU;
 	data = (data_status >> 8) & 0xFFFFFFU;
+	result = AD4130_Check_Status_Error(adc_device_id, status);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
 	if ((status & 0x80U) != 0U)
 	{
-		return AD4130_MEASUREMENT_NOT_READY;
-	}
-	if ((status & 0x50U) != 0U)
-	{
-		return AD4130_MEASUREMENT_STATUS_ERROR;
+		return ERROR_CODE_MEASUREMENT_NOT_READY;
 	}
 
 	*channel = status & 0x0FU;
 	if (*channel > 3U)
 	{
-		return AD4130_MEASUREMENT_CHANNEL_CONFIG_ERROR;
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL_ID;
 	}
 
 	switch (*channel)
@@ -94,16 +92,16 @@ int AD4130_Read_Resistance(
 			break;
 
 		default:
-			return AD4130_MEASUREMENT_CHANNEL_CONFIG_ERROR;
+			return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL_ID;
 	}
 
 	if (iout_level == 0U)
 	{
-		return AD4130_MEASUREMENT_BELOW_RANGE;
+		return ERROR_CODE_MEASUREMENT_BELOW_RANGE;
 	}
-	if (iout < 0.0f)
+	if (iout <= 0.0f)
 	{
-		return AD4130_MEASUREMENT_IOUT_CONFIG_ERROR;
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
 	}
 
 	voltage = (
@@ -119,7 +117,7 @@ int AD4130_Read_Resistance(
 			data,
 			&new_iout_level
 	);
-	if (autorange_result != AD4130_MEASUREMENT_OK)
+	if (autorange_result != ERROR_CODE_NONE)
 	{
 		return autorange_result;
 	}
@@ -145,28 +143,24 @@ int AD4130_Read_Resistance(
 				break;
 
 			default:
-				return AD4130_MEASUREMENT_CHANNEL_CONFIG_ERROR;
+				return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL_ID;
 		}
 
-		if (result != AD4130_RESULT_OK)
+		if (result != ERROR_CODE_NONE)
 		{
-			if (result == AD4130_RESULT_TIMEOUT)
-			{
-				return AD4130_MEASUREMENT_TIMEOUT;
-			}
-			return AD4130_MEASUREMENT_COMM_ERROR;
+			return result;
 		}
 	}
 
 	if (new_iout_level == 0U)
 	{
-		return AD4130_MEASUREMENT_BELOW_RANGE;
+		return ERROR_CODE_MEASUREMENT_BELOW_RANGE;
 	}
 
-	return AD4130_MEASUREMENT_OK;
+	return ERROR_CODE_NONE;
 }
 
-static int AD4130_Get_Autorange_Level(
+static ErrorCode_t AD4130_Get_Autorange_Level(
 		uint8_t current_level,
 		uint32_t data,
 		uint8_t *new_level
@@ -174,7 +168,7 @@ static int AD4130_Get_Autorange_Level(
 {
 	if ((current_level < 1U) || (current_level > 7U) || (new_level == NULL))
 	{
-		return AD4130_MEASUREMENT_IOUT_CONFIG_ERROR;
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
 	}
 
 	data &= 0xFFFFFFU;
@@ -187,13 +181,13 @@ static int AD4130_Get_Autorange_Level(
 	{
 		if (data >= AD4130_DATA_100NA_OVER_RANGE)
 		{
-			return AD4130_MEASUREMENT_ABOVE_RANGE;
+			return ERROR_CODE_MEASUREMENT_ABOVE_RANGE;
 		}
 		if (data <= AD4130_DATA_100NA_RETURN)
 		{
 			*new_level = 2U;  /* 100 nA -> 10 µA */
 		}
-		return AD4130_MEASUREMENT_OK;
+		return ERROR_CODE_NONE;
 	}
 
 	if (data >= AD4130_DATA_HIGH)
@@ -225,7 +219,7 @@ static int AD4130_Get_Autorange_Level(
 				break;
 
 			default:
-				return AD4130_MEASUREMENT_IOUT_CONFIG_ERROR;
+				return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
 		}
 	}
 	else if (data <= AD4130_DATA_LOW)
@@ -257,8 +251,8 @@ static int AD4130_Get_Autorange_Level(
 				break;
 
 			default:
-				return AD4130_MEASUREMENT_IOUT_CONFIG_ERROR;
+				return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
 		}
 	}
-	return AD4130_MEASUREMENT_OK;
+	return ERROR_CODE_NONE;
 }

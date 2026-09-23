@@ -28,13 +28,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "common/error_code.h"
+#include "drivers/ad4130_measurement.h"
 #include "application/sensor_adc.h"
 #include "application/sensor_coeffs.h"
 #include "application/sensor_fit.h"
 #include "application/usb_comm.h"
-#include "communication/modbus/modbus_registers.h"
-#include "drivers/ad4130_measurement.h"
 #include "mb.h"
+#include "communication/modbus/modbus_registers.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,11 +45,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SENSOR_READ_OK         0
-#define SENSOR_READ_NOT_READY  1
-#define SENSOR_READ_ADC_ERROR -1
-#define SENSOR_READ_FIT_ERROR -2
-
 #define MODBUS_SLAVE_ADDRESS  1U
 #define MODBUS_PORT           0U
 #define MODBUS_BAUD_RATE      115200UL
@@ -115,7 +111,7 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
-	int adc_result;
+	ErrorCode_t adc_result;
 	int coeffs_result;
 	int usb_result;
 	eMBErrorCode modbus_rtu_result;
@@ -124,7 +120,10 @@ int main(void)
 
 	/* sensor_adc: ADC initialize */
 	adc_result = sensor_adc_initialize();
-	if (adc_result != SENSOR_ADC_OK)
+	if (
+			(adc_result != ERROR_CODE_NONE)
+			&& (adc_result != ERROR_CODE_MEASUREMENT_STATUS_POR)
+	)
 	{
 		Error_Handler();
 	}
@@ -188,8 +187,8 @@ int main(void)
 		/* ADC read */
 		read_result = read_sensor();
 		if (
-				(read_result != SENSOR_READ_OK)
-				&& (read_result != SENSOR_READ_NOT_READY)
+				(read_result != ERROR_CODE_NONE)
+				&& (read_result != ERROR_CODE_MEASUREMENT_NOT_READY)
 		)
 		{
 			Error_Handler();
@@ -248,9 +247,9 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 static int read_sensor(void)
 {
-	int result;
+	ErrorCode_t result;
+	ErrorCode_t fit_result;
 	uint8_t channel;
-	int fit_result;
 	float measured_resistance;
 	float measured_temperature;
 	uint8_t read_count = 0U;
@@ -258,18 +257,18 @@ static int read_sensor(void)
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Read_Resistance(i+1U, &channel, &measured_resistance);
-		if (result == AD4130_MEASUREMENT_NOT_READY)
+		if (result == ERROR_CODE_MEASUREMENT_NOT_READY)
 		{
 			continue;
 		}
-		if (result != AD4130_MEASUREMENT_OK)
+		if (result != ERROR_CODE_NONE)
 		{
 			printf(
 					"ADC %u read incorrect: %d\r\n",
 					(unsigned int)(i+1U),
 					(int)result
 			);
-			return SENSOR_READ_ADC_ERROR;
+			return result;
 		}
 
 		/* sensor_fit: temperature fit */
@@ -278,7 +277,7 @@ static int read_sensor(void)
 				sensor_coeffs_get_curve(i+1U, channel),
 				&measured_temperature
 		);
-		if (fit_result != SENSOR_FIT_OK)
+		if (fit_result != ERROR_CODE_NONE)
 		{
 			printf(
 					"ADC %u CHANNEL_%u fit incorrect: %d\r\n",
@@ -286,7 +285,7 @@ static int read_sensor(void)
 					(unsigned int)channel,
 					fit_result
 			);
-			return SENSOR_READ_FIT_ERROR;
+			return fit_result;
 		}
 
 		resistance[i][channel] = measured_resistance;
@@ -314,10 +313,10 @@ static int read_sensor(void)
 
 	if (read_count == 0U)
 	{
-		return SENSOR_READ_NOT_READY;
+		return ERROR_CODE_MEASUREMENT_NOT_READY;
 	}
 
-	return SENSOR_READ_OK;
+	return ERROR_CODE_NONE;
 }
 /* USER CODE END 4 */
 

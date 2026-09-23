@@ -3,16 +3,13 @@
 
 #include <stdint.h>
 
+#include "common/error_code.h"
 #include "storage/sensor_coeffs_format.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define SENSOR_FIT_OK          0
-#define SENSOR_FIT_PARAM_ERROR -1
-#define SENSOR_FIT_RANGE_ERROR -2
 
 typedef struct
 {
@@ -32,7 +29,7 @@ typedef struct
 } Curve_t;
 
 
-int resistance_to_temperature(
+ErrorCode_t resistance_to_temperature(
 		float resistance,
 		const Curve_t *curve,
 		float *temperature

@@ -44,37 +44,130 @@ AD4130Iouts_t ad4130_iouts[2] = {0};
 
 /* ------------------------------------------------------------------------ */
 
-static AD4130Result_t AD4130_Convert_HAL_Status(HAL_StatusTypeDef status)
+static ErrorCode_t AD4130_Convert_HAL_Status(HAL_StatusTypeDef status)
 {
 	switch (status)
 	{
 		case HAL_OK:
-			return AD4130_RESULT_OK;
+			return ERROR_CODE_NONE;
 
 		case HAL_BUSY:
-			return AD4130_RESULT_BUSY;
+			return ERROR_CODE_AD4130_SPI_BUSY;
 
 		case HAL_TIMEOUT:
-			return AD4130_RESULT_TIMEOUT;
+			return ERROR_CODE_AD4130_SPI_TIMEOUT;
 
 		case HAL_ERROR:
 		default:
-			return AD4130_RESULT_ERROR;
+			return ERROR_CODE_AD4130_SPI;
 	}
+}
+
+static ErrorCode_t AD4130_Decode_Error(uint16_t error)
+{
+	if ((error & (1U << 11)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_AINP_OV_UV;
+	}
+	if ((error & (1U << 10)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_AINM_OV_UV;
+	}
+	if ((error & (1U << 9)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_REF_OV_UV;
+	}
+	if ((error & (1U << 8)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_REF_DETECT;
+	}
+	if ((error & (1U << 7)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_ADC;
+	}
+	if ((error & (1U << 6)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_SPI_IGNORE;
+	}
+	if ((error & (1U << 5)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_SPI_SCLK_COUNT;
+	}
+	if ((error & (1U << 4)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_SPI_READ;
+	}
+	if ((error & (1U << 3)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_SPI_WRITE;
+	}
+	if ((error & (1U << 2)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_SPI_CRC;
+	}
+	if ((error & (1U << 1)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_MM_CRC;
+	}
+	if ((error & (1U << 0)) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_ROM_CRC;
+	}
+
+	return ERROR_CODE_NONE;
+}
+
+ErrorCode_t AD4130_Check_Status_Error(
+		uint8_t adc_device_id,
+		uint8_t status
+)
+{
+	ErrorCode_t result;
+	uint16_t error = 0U;
+
+	if ((adc_device_id < 1U) || (adc_device_id > 2U))
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
+	}
+
+	if ((status & 0x40U) != 0U)
+	{
+		result = AD4130_Read_16_Bit(adc_device_id, AD4130_ERROR, &error);
+		if (result != ERROR_CODE_NONE)
+		{
+			return result;
+		}
+
+		result = AD4130_Decode_Error(error);
+		if (result == ERROR_CODE_NONE)
+		{
+			return ERROR_CODE_MEASUREMENT_STATUS;
+		}
+		return result;
+	}
+
+	if ((status & 0x10U) != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_POR;
+	}
+
+	return ERROR_CODE_NONE;
 }
 
 /* ------------------------------------------------------------------------ */
 
 static AD4130Device_t *AD4130_Get_Device(uint8_t adc_device_id)
 {
-	if (adc_device_id < 1U || adc_device_id > 2U)
+	if ((adc_device_id < 1U) || (adc_device_id > 2U))
 	{
 		return NULL;  /* Invalid ADC device ID */
 	}
 	return &ad4130_devices[adc_device_id - 1U];
 }
 
-AD4130Result_t AD4130_Read_8_Bit(
+/* ------------------------------------------------------------------------ */
+
+ErrorCode_t AD4130_Read_8_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		uint8_t *value
@@ -85,10 +178,15 @@ AD4130Result_t AD4130_Read_8_Bit(
 	uint8_t tx[2] = {0};
 	uint8_t rx[2] = {0};
 
-	device = AD4130_Get_Device(adc_device_id);
-	if ((device == NULL) || (value == NULL))
+	if (value == NULL)
 	{
-		return AD4130_RESULT_ERROR;
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	device = AD4130_Get_Device(adc_device_id);
+	if (device == NULL)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
 
 	tx[0] = 0x40U | reg_addr;  /* 0b01000000, COMMS read */
@@ -104,7 +202,7 @@ AD4130Result_t AD4130_Read_8_Bit(
 	return AD4130_Convert_HAL_Status(status);
 }
 
-AD4130Result_t AD4130_Read_16_Bit(
+ErrorCode_t AD4130_Read_16_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		uint16_t *value
@@ -115,10 +213,15 @@ AD4130Result_t AD4130_Read_16_Bit(
 	uint8_t tx[3] = {0};
 	uint8_t rx[3] = {0};
 
-	device = AD4130_Get_Device(adc_device_id);
-	if ((device == NULL) || (value == NULL))
+	if (value == NULL)
 	{
-		return AD4130_RESULT_ERROR;
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	device = AD4130_Get_Device(adc_device_id);
+	if (device == NULL)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
 
 	tx[0] = 0x40U | reg_addr;  /* 0b01000000, COMMS read */
@@ -137,7 +240,7 @@ AD4130Result_t AD4130_Read_16_Bit(
 	return AD4130_Convert_HAL_Status(status);
 }
 
-AD4130Result_t AD4130_Read_24_Bit(
+ErrorCode_t AD4130_Read_24_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		uint32_t *value
@@ -148,10 +251,15 @@ AD4130Result_t AD4130_Read_24_Bit(
 	uint8_t tx[4] = {0};
 	uint8_t rx[4] = {0};
 
-	device = AD4130_Get_Device(adc_device_id);
-	if ((device == NULL) || (value == NULL))
+	if (value == NULL)
 	{
-		return AD4130_RESULT_ERROR;
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	device = AD4130_Get_Device(adc_device_id);
+	if (device == NULL)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
 
 	tx[0] = 0x40U | reg_addr;  /* 0b01000000, COMMS read */
@@ -171,7 +279,7 @@ AD4130Result_t AD4130_Read_24_Bit(
 	return AD4130_Convert_HAL_Status(status);
 }
 
-AD4130Result_t AD4130_Read_32_Bit(
+ErrorCode_t AD4130_Read_32_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		uint32_t *value
@@ -182,10 +290,15 @@ AD4130Result_t AD4130_Read_32_Bit(
 	uint8_t tx[5] = {0};
 	uint8_t rx[5] = {0};
 
-	device = AD4130_Get_Device(adc_device_id);
-	if ((device == NULL) || (value == NULL))
+	if (value == NULL)
 	{
-		return AD4130_RESULT_ERROR;
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	device = AD4130_Get_Device(adc_device_id);
+	if (device == NULL)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
 
 	tx[0] = 0x40U | reg_addr;  /* 0b01000000, COMMS read */
@@ -206,7 +319,7 @@ AD4130Result_t AD4130_Read_32_Bit(
 	return AD4130_Convert_HAL_Status(status);
 }
 
-AD4130Result_t AD4130_Write(
+ErrorCode_t AD4130_Write(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
 		const uint8_t *data,
@@ -217,15 +330,20 @@ AD4130Result_t AD4130_Write(
 	HAL_StatusTypeDef status;
 	uint8_t tx[4] = {0};
 
-	device = AD4130_Get_Device(adc_device_id);
-	if ((device == NULL) || (data == NULL))
+	if (data == NULL)
 	{
-		return AD4130_RESULT_ERROR;
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	device = AD4130_Get_Device(adc_device_id);
+	if (device == NULL)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
 
 	if ((len == 0U) || (len > 3U))
 	{
-		return AD4130_RESULT_ERROR;  /* write length invalid */
+		return ERROR_CODE_AD4130_ILLEGAL_WRITE_LENGTH;
 	}
 
 	tx[0] = reg_addr & 0x3FU;  /*  0b00RS[5:0], COMMS write*/
@@ -245,7 +363,7 @@ AD4130Result_t AD4130_Write(
 	return AD4130_Convert_HAL_Status(status);
 }
 
-AD4130Result_t AD4130_Reset(uint8_t adc_device_id)
+ErrorCode_t AD4130_Reset(uint8_t adc_device_id)
 {
 	AD4130Device_t *device;
 	HAL_StatusTypeDef status;
@@ -257,7 +375,7 @@ AD4130Result_t AD4130_Reset(uint8_t adc_device_id)
 	device = AD4130_Get_Device(adc_device_id);
 	if (device == NULL)
 	{
-		return AD4130_RESULT_ERROR;
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
 
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_RESET);
@@ -273,26 +391,26 @@ AD4130Result_t AD4130_Reset(uint8_t adc_device_id)
 
 /* ------------------------------------------------------------------------ */
 
-AD4130Result_t AD4130_Init(
+ErrorCode_t AD4130_Init(
 		uint8_t adc_device_id,
 		AD4130InitResult_t *init_result
 )
 {
-	AD4130Result_t result;
+	ErrorCode_t result;
 	uint16_t control_val;
 	uint16_t error_en_val;
 	uint8_t tx[2] = {0};
 
 	if (init_result == NULL)
 	{
-		return AD4130_RESULT_ERROR;
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
 	}
 	init_result->id = 0U;
 	init_result->status = 0U;
 	init_result->error = 0U;
 
 	result = AD4130_Reset(adc_device_id);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
@@ -304,7 +422,7 @@ AD4130Result_t AD4130_Init(
 	tx[0] = (control_val >> 8) & 0xFFU;
 	tx[1] = control_val & 0xFFU;
 	result = AD4130_Write(adc_device_id, AD4130_ADC_CONTROL, tx, 2U);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
@@ -316,45 +434,51 @@ AD4130Result_t AD4130_Init(
 	tx[0] = (error_en_val >> 8) & 0xFFU;
 	tx[1] = error_en_val & 0xFFU;
 	result = AD4130_Write(adc_device_id, AD4130_ERROR_EN, tx, 2U);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 
 	result = AD4130_Config(adc_device_id);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 
 	result = AD4130_Filter(adc_device_id);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 
 	result = AD4130_Read_8_Bit(adc_device_id, AD4130_ID, &init_result->id);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 	result = AD4130_Read_8_Bit(adc_device_id, AD4130_STATUS, &init_result->status);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 	result = AD4130_Read_16_Bit(adc_device_id, AD4130_ERROR, &init_result->error);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 
-	return AD4130_RESULT_OK;
+	result = AD4130_Decode_Error(init_result->error);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	return AD4130_Check_Status_Error(adc_device_id, init_result->status);
 }
 
-AD4130Result_t AD4130_Config(uint8_t adc_device_id)
+ErrorCode_t AD4130_Config(uint8_t adc_device_id)
 {
-	AD4130Result_t result;
+	ErrorCode_t result;
 	uint16_t config_val;
 	uint16_t config_val_common;
 	uint8_t config_val_iout[8];
@@ -380,18 +504,18 @@ AD4130Result_t AD4130_Config(uint8_t adc_device_id)
 		tx[0] = (config_val >> 8) & 0xFFU;
 		tx[1] = config_val & 0xFFU;
 		result = AD4130_Write(adc_device_id, (uint8_t)(AD4130_CONFIG_0+i), tx, 2U);
-		if (result != AD4130_RESULT_OK)
+		if (result != ERROR_CODE_NONE)
 		{
 			return result;
 		}
 	}
 
-	return AD4130_RESULT_OK;
+	return ERROR_CODE_NONE;
 }
 
-AD4130Result_t AD4130_Filter(uint8_t adc_device_id)
+ErrorCode_t AD4130_Filter(uint8_t adc_device_id)
 {
-	AD4130Result_t result;
+	ErrorCode_t result;
 	uint32_t filter_val;
 	uint8_t tx[3] = {0};
 
@@ -406,28 +530,28 @@ AD4130Result_t AD4130_Filter(uint8_t adc_device_id)
 	for (uint8_t i = 0; i < 8U; i++)
 	{
 		result = AD4130_Write(adc_device_id, (uint8_t)(AD4130_FILTER_0+i), tx, 3U);
-		if (result != AD4130_RESULT_OK)
+		if (result != ERROR_CODE_NONE)
 		{
 			return result;
 		}
 	}
 
-	return AD4130_RESULT_OK;
+	return ERROR_CODE_NONE;
 }
 
 /* ------------------------------------------------------------------------ */
 
-AD4130Result_t AD4130_Channel_0(
+ErrorCode_t AD4130_Channel_0(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 )
 {
 	if (iout_level > 7U)
 	{
-		return AD4130_RESULT_ERROR;  /* Invalid I_OUT level */
+		return ERROR_CODE_AD4130_ILLEGAL_IOUT;
 	}
 
-	AD4130Result_t result;
+	ErrorCode_t result;
 	uint32_t channel_0_val;
 	uint8_t tx[3] = {0};
 
@@ -443,7 +567,7 @@ AD4130Result_t AD4130_Channel_0(
 	tx[2] = channel_0_val & 0xFFU;
 
 	result = AD4130_Write(adc_device_id, AD4130_CHANNEL_0, tx, 3U);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
@@ -454,17 +578,17 @@ AD4130Result_t AD4130_Channel_0(
 	return result;
 }
 
-AD4130Result_t AD4130_Channel_1(
+ErrorCode_t AD4130_Channel_1(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 )
 {
 	if (iout_level > 7U)
 	{
-		return AD4130_RESULT_ERROR;  /* Invalid I_OUT level */
+		return ERROR_CODE_AD4130_ILLEGAL_IOUT;
 	}
 
-	AD4130Result_t result;
+	ErrorCode_t result;
 	uint32_t channel_1_val;
 	uint8_t tx[3] = {0};
 
@@ -480,7 +604,7 @@ AD4130Result_t AD4130_Channel_1(
 	tx[2] = channel_1_val & 0xFFU;
 
 	result = AD4130_Write(adc_device_id, AD4130_CHANNEL_1, tx, 3U);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
@@ -491,17 +615,17 @@ AD4130Result_t AD4130_Channel_1(
 	return result;
 }
 
-AD4130Result_t AD4130_Channel_2(
+ErrorCode_t AD4130_Channel_2(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 )
 {
 	if (iout_level > 7U)
 	{
-		return AD4130_RESULT_ERROR;  /* Invalid I_OUT level */
+		return ERROR_CODE_AD4130_ILLEGAL_IOUT;
 	}
 
-	AD4130Result_t result;
+	ErrorCode_t result;
 	uint32_t channel_2_val;
 	uint8_t tx[3] = {0};
 
@@ -517,7 +641,7 @@ AD4130Result_t AD4130_Channel_2(
 	tx[2] = channel_2_val & 0xFFU;
 
 	result = AD4130_Write(adc_device_id, AD4130_CHANNEL_2, tx, 3U);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
@@ -528,17 +652,17 @@ AD4130Result_t AD4130_Channel_2(
 	return result;
 }
 
-AD4130Result_t AD4130_Channel_3(
+ErrorCode_t AD4130_Channel_3(
 		uint8_t adc_device_id,
 		uint8_t iout_level
 )
 {
 	if (iout_level > 7U)
 	{
-		return AD4130_RESULT_ERROR;  /* Invalid I_OUT level */
+		return ERROR_CODE_AD4130_ILLEGAL_IOUT;
 	}
 
-	AD4130Result_t result;
+	ErrorCode_t result;
 	uint32_t channel_3_val;
 	uint8_t tx[3] = {0};
 
@@ -554,7 +678,7 @@ AD4130Result_t AD4130_Channel_3(
 	tx[2] = channel_3_val & 0xFFU;
 
 	result = AD4130_Write(adc_device_id, AD4130_CHANNEL_3, tx, 3U);
-	if (result != AD4130_RESULT_OK)
+	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}

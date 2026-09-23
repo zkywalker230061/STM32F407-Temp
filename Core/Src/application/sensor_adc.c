@@ -7,22 +7,32 @@
 #include "drivers/ad4130.h"
 
 
-int sensor_adc_initialize(void)
+ErrorCode_t sensor_adc_initialize(void)
 {
-	AD4130Result_t result;
+	ErrorCode_t result;
 	AD4130InitResult_t init_result[2] = {0};
+	uint8_t por_detected = 0U;
 
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Init(i+1U, &init_result[i]);
-		if (result != AD4130_RESULT_OK)
+		if (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
 		{
+			por_detected = 1U;
 			printf(
-					"ADC %u INIT incorrect: %d\r\n",
+					"ADC %u POR detected during initialization: %d\r\n",
 					(unsigned int)(i+1U),
 					(int)result
 			);
-			return SENSOR_ADC_INIT_ERROR;
+		}
+		else if (result != ERROR_CODE_NONE)
+		{
+			printf(
+					"ADC %u initialization failed: %d\r\n",
+					(unsigned int)(i+1U),
+					(int)result
+			);
+			return result;
 		}
 
 		printf(
@@ -39,12 +49,16 @@ int sensor_adc_initialize(void)
 			(unsigned int)init_result[i].error
 		);
 
-		if ((init_result[i].id != 0x05U) || (init_result[i].error != 0x0000U))
+		if (init_result[i].id != 0x05U)
 		{
-			printf("ADC %u ID or ERROR incorrect\r\n", (unsigned int)(i+1U));
-			return SENSOR_ADC_ID_ERROR;
+			printf(
+					"ADC %u ID mismatch: expected 0x05, received 0x%02X, error code %d\r\n",
+					(unsigned int)(i+1U),
+					(unsigned int)init_result[i].id,
+					(int)ERROR_CODE_AD4130_ID_MISMATCH
+			);
+			return ERROR_CODE_AD4130_ID_MISMATCH;
 		}
-
 		/* ADC_CONTROL:		0x2700 - 0010 0111 0000 0000 */
 		/* IO_CONTROL:		0x0000 - 0000 0000 0000 0000 */
 		/* VBIAS_CONTROL:	0x0000 - 0000 0000 0000 0000 */
@@ -56,51 +70,56 @@ int sensor_adc_initialize(void)
 	for (uint8_t i = 0; i < 2U; i++)
 	{
 		result = AD4130_Channel_0(i+1U, 2U);  /* I_OUT0_0 */
-		if (result != AD4130_RESULT_OK)
+		if (result != ERROR_CODE_NONE)
 		{
 			printf(
-					"ADC %u CHANNEL_0 setup incorrect: %d\r\n",
+					"ADC %u CHANNEL_0 setup failed: %d\r\n",
 					(unsigned int)(i+1U),
 					(int)result
 			);
-			return SENSOR_ADC_SETUP_ERROR;
+			return result;
 		}
 
 //		result = AD4130_Channel_1(i+1U, 2U);
-//		if (result != AD4130_RESULT_OK)
+//		if (result != ERROR_CODE_NONE)
 //		{
 //			printf(
-//					"ADC %u CHANNEL_1 setup incorrect: %d\r\n",
+//					"ADC %u CHANNEL_1 setup failed: %d\r\n",
 //					(unsigned int)(i+1U),
 //					(int)result
 //			);
-//			return SENSOR_ADC_SETUP_ERROR;
+//			return result;
 //		}
 //
 //		result = AD4130_Channel_2(i+1U, 2U);
-//		if (result != AD4130_RESULT_OK)
+//		if (result != ERROR_CODE_NONE)
 //		{
 //			printf(
-//					"ADC %u CHANNEL_2 setup incorrect: %d\r\n",
+//					"ADC %u CHANNEL_2 setup failed: %d\r\n",
 //					(unsigned int)(i+1U),
 //					(int)result
 //			);
-//			return SENSOR_ADC_SETUP_ERROR;
+//			return result;
 //		}
 //
 //		result = AD4130_Channel_3(i+1U, 2U);
-//		if (result != AD4130_RESULT_OK)
+//		if (result != ERROR_CODE_NONE)
 //		{
 //			printf(
-//					"ADC %u CHANNEL_3 setup incorrect: %d\r\n",
+//					"ADC %u CHANNEL_3 setup failed: %d\r\n",
 //					(unsigned int)(i+1U),
 //					(int)result
 //			);
-//			return SENSOR_ADC_SETUP_ERROR;
+//			return result;
 //		}
 	}
 
 	HAL_Delay(500);
 
-	return SENSOR_ADC_OK;
+	if (por_detected != 0U)
+	{
+		return ERROR_CODE_MEASUREMENT_STATUS_POR;
+	}
+
+	return ERROR_CODE_NONE;
 }
