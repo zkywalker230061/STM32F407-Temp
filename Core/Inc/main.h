@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define AD4130_SYNC_Pin GPIO_PIN_15
+#define AD4130_SYNC_GPIO_Port GPIOA
 #define SPI3_CS1_Pin GPIO_PIN_0
 #define SPI3_CS1_GPIO_Port GPIOD
 #define SPI3_CS2_Pin GPIO_PIN_1
