@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 
+#include "common/ad4130_config_file.h"
 #include "drivers/ad4130.h"
 
 
@@ -34,7 +35,7 @@ ErrorCode_t AD4130_Read_Resistance(
 	uint8_t iout_level;
 	uint8_t new_iout_level;
 
-	if ((adc_device_id < 1U) || (adc_device_id > 2U))
+	if ((adc_device_id < AD4130_DEVICE_ID_MIN) || (adc_device_id > AD4130_DEVICE_ID_MAX))
 	{
 		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
@@ -64,7 +65,7 @@ ErrorCode_t AD4130_Read_Resistance(
 	}
 
 	*channel = status & 0x0FU;
-	if (*channel > 3U)
+	if (*channel > AD4130_CHANNEL_MAX)
 	{
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
 	}

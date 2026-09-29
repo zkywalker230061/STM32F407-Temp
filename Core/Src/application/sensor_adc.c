@@ -4,16 +4,17 @@
 
 #include "stm32f4xx_hal.h"
 
+#include "common/ad4130_config_file.h"
 #include "drivers/ad4130.h"
 
 
 ErrorCode_t sensor_adc_initialize(void)
 {
 	ErrorCode_t result;
-	AD4130InitResult_t init_result[2] = {0};
+	AD4130InitResult_t init_result[AD4130_DEVICE_COUNT] = {0};
 	uint8_t por_detected = 0U;
 
-	for (uint8_t i = 0; i < 2U; i++)
+	for (uint8_t i = 0U; i < AD4130_DEVICE_COUNT; i++)
 	{
 		result = AD4130_Init(i+1U, &init_result[i]);
 		if (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
@@ -67,7 +68,7 @@ ErrorCode_t sensor_adc_initialize(void)
 
 	HAL_Delay(500);
 
-	for (uint8_t i = 0; i < 2U; i++)
+	for (uint8_t i = 0U; i < AD4130_DEVICE_COUNT; i++)
 	{
 		result = AD4130_Channel_0(i+1U, 2U);  /* I_OUT0_0 */
 		if (result != ERROR_CODE_NONE)

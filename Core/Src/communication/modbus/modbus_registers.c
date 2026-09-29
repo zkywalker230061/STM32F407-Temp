@@ -10,8 +10,6 @@
 #include "communication/modbus/modbus_registers.h"
 
 /* ----------------------- Defines ------------------------------------------*/
-#define MB_ADC_COUNT                        2U
-#define MB_CHANNEL_COUNT                    4U
 #define MB_CHANNEL_STATUS_VALID             1U
 
 /* ----------------------- Type definitions ---------------------------------*/
@@ -36,12 +34,14 @@ vMBRegInputUpdate( uint8_t ucADCIndex, uint8_t ucChannel,
     xMBFloatValue xResistance;
     xMBFloatValue xTemperature;
 
-    if( ( ucADCIndex >= MB_ADC_COUNT ) || ( ucChannel >= MB_CHANNEL_COUNT ) )
+    if( ( ucADCIndex >= AD4130_DEVICE_COUNT )
+        || ( ucChannel >= AD4130_SENSOR_CHANNEL_COUNT ) )
     {
         return;
     }
 
-    usChannelIndex = ( USHORT )( ucADCIndex * MB_CHANNEL_COUNT + ucChannel );
+    usChannelIndex = ( USHORT )( ucADCIndex
+                                 * AD4130_SENSOR_CHANNEL_COUNT + ucChannel );
     usTemperatureIndex = ( USHORT )( MB_INPUT_TEMPERATURE_OFFSET
                                      + usChannelIndex * 2U );
     usResistanceIndex = ( USHORT )( MB_INPUT_RESISTANCE_OFFSET

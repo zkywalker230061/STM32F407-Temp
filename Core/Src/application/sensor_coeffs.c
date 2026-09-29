@@ -4,17 +4,18 @@
 #include <stdio.h>
 
 #include "communication/usb_cdc/usb_cdc_scup.h"
+#include "common/ad4130_config_file.h"
 #include "storage/sensor_coeffs_decoder.h"
 #include "storage/sensor_coeffs_format.h"
 #include "storage/sensor_coeffs_storage.h"
 
 
-static Curve_t sensor_curves[2][4];
+static Curve_t sensor_curves[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
 static Curve_t received_curve;
-static uint8_t sensor_curve_valid[2][4];
-static uint8_t sensor_coeffs_ram_data[2][4][SENSOR_COEFFS_BINARY_MAX_SIZE];
-static uint32_t sensor_coeffs_ram_length[2][4];
-static uint8_t sensor_coeffs_ram_valid[2][4];
+static uint8_t sensor_curve_valid[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
+static uint8_t sensor_coeffs_ram_data[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT][SENSOR_COEFFS_BINARY_MAX_SIZE];
+static uint32_t sensor_coeffs_ram_length[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
+static uint8_t sensor_coeffs_ram_valid[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
 
 static ErrorCode_t sensor_coeffs_copy_flash_to_ram(void);
 static ErrorCode_t sensor_coeffs_copy_ram_to_flash(void);
@@ -31,9 +32,9 @@ ErrorCode_t sensor_coeffs_initialize(void)
 
 	result = ERROR_CODE_NONE;
 
-	for (uint8_t adc_device_id = 1U; adc_device_id <= 2U; adc_device_id++)
+	for (uint8_t adc_device_id = AD4130_DEVICE_ID_MIN; adc_device_id <= AD4130_DEVICE_ID_MAX; adc_device_id++)
 	{
-		for (uint8_t channel = 0U; channel < 4U; channel++)
+		for (uint8_t channel = AD4130_CHANNEL_MIN; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
 		{
 			sensor_curve_valid[adc_device_id - 1U][channel] = 0U;
 
@@ -196,8 +197,9 @@ const Curve_t *sensor_coeffs_get_curve(
 )
 {
 	if (
-			(adc_device_id < 1U) || (adc_device_id > 2U)
-			|| (channel > 3U)
+			(adc_device_id < AD4130_DEVICE_ID_MIN)
+			|| (adc_device_id > AD4130_DEVICE_ID_MAX)
+			|| (channel > AD4130_CHANNEL_MAX)
 	)
 	{
 		return NULL;
@@ -217,9 +219,9 @@ static ErrorCode_t sensor_coeffs_copy_flash_to_ram(void)
 	uint32_t binary_length;
 	ErrorCode_t storage_result;
 
-	for (uint8_t adc_device_id = 1U; adc_device_id <= 2U; adc_device_id++)
+	for (uint8_t adc_device_id = AD4130_DEVICE_ID_MIN; adc_device_id <= AD4130_DEVICE_ID_MAX; adc_device_id++)
 	{
-		for (uint8_t channel = 0U; channel < 4U; channel++)
+		for (uint8_t channel = AD4130_CHANNEL_MIN; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
 		{
 			sensor_coeffs_ram_length[adc_device_id - 1U][channel] = 0U;
 			sensor_coeffs_ram_valid[adc_device_id - 1U][channel] = 0U;
@@ -264,9 +266,9 @@ static ErrorCode_t sensor_coeffs_copy_ram_to_flash(void)
 {
 	ErrorCode_t storage_result;
 
-	for (uint8_t adc_device_id = 1U; adc_device_id <= 2U; adc_device_id++)
+	for (uint8_t adc_device_id = AD4130_DEVICE_ID_MIN; adc_device_id <= AD4130_DEVICE_ID_MAX; adc_device_id++)
 	{
-		for (uint8_t channel = 0U; channel < 4U; channel++)
+		for (uint8_t channel = AD4130_CHANNEL_MIN; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
 		{
 			if (sensor_coeffs_ram_valid[adc_device_id - 1U][channel] == 0U)
 			{

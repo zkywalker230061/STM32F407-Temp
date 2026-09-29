@@ -28,6 +28,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "common/error_code.h"
+#include "common/ad4130_config_file.h"
 #include "drivers/ad4130_measurement.h"
 #include "application/sensor_adc.h"
 #include "application/sensor_coeffs.h"
@@ -59,8 +60,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-static float resistance[2][4];
-static float temperature[2][4];
+static float resistance[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
+static float temperature[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -279,7 +280,7 @@ static ErrorCode_t read_sensor(void)
 	float measured_temperature;
 	uint8_t read_count = 0U;
 
-	for (uint8_t adc_device_id = 1U; adc_device_id <= 2U; adc_device_id++)
+	for (uint8_t adc_device_id = AD4130_DEVICE_ID_MIN; adc_device_id <= AD4130_DEVICE_ID_MAX; adc_device_id++)
 	{
 		result = AD4130_Read_Resistance(
 				adc_device_id,

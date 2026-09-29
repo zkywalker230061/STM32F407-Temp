@@ -4,6 +4,7 @@
 
 #include "stm32f4xx_hal.h"
 
+#include "common/ad4130_config_file.h"
 #include "storage/sensor_coeffs_format.h"
 
 
@@ -39,8 +40,9 @@ ErrorCode_t Sensor_Coeffs_Storage_Save(
 
 	if (
 			(binary_data == NULL)
-			|| (adc_device_id < 1U) || (adc_device_id > 2U)
-			|| (channel > 3U)
+			|| (adc_device_id < AD4130_DEVICE_ID_MIN)
+			|| (adc_device_id > AD4130_DEVICE_ID_MAX)
+			|| (channel > AD4130_CHANNEL_MAX)
 	)
 	{
 		return ERROR_CODE_COEFFS_STORAGE_ILLEGAL_PARAM;
@@ -197,7 +199,9 @@ ErrorCode_t Sensor_Coeffs_Storage_Load(
 
 	if (
 			(binary_data == NULL) || (binary_length == NULL)
-			|| (adc_device_id < 1U) || (adc_device_id > 2U) || (channel > 3U)
+			|| (adc_device_id < AD4130_DEVICE_ID_MIN)
+			|| (adc_device_id > AD4130_DEVICE_ID_MAX)
+			|| (channel > AD4130_CHANNEL_MAX)
 	)
 	{
 		return ERROR_CODE_COEFFS_STORAGE_ILLEGAL_PARAM;

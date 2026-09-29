@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "common/error_code.h"
+#include "common/ad4130_config_file.h"
 
 
 #ifdef __cplusplus
@@ -34,7 +35,7 @@ typedef struct
 	float i_3;
 	float i_4;
 } AD4130Iouts_t;
-extern AD4130Iouts_t ad4130_iouts[2];
+extern AD4130Iouts_t ad4130_iouts[AD4130_DEVICE_COUNT];
 
 /* ------------------------------------------------------------------------ */
 

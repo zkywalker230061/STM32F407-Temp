@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 
+#include "common/ad4130_config_file.h"
 #include "storage/sensor_coeffs_format.h"
 
 
@@ -75,9 +76,9 @@ ErrorCode_t USB_CDC_SCUP_Receive(
 			|| (usb_cdc_scup_buffer[1] != 'C')
 			|| (usb_cdc_scup_buffer[2] != 'U')
 			|| (usb_cdc_scup_buffer[3] != 'P')
-			|| (usb_cdc_scup_buffer[4] < 1U)
-			|| (usb_cdc_scup_buffer[4] > 2U)
-			|| (usb_cdc_scup_buffer[5] > 3U)
+			|| (usb_cdc_scup_buffer[4] < AD4130_DEVICE_ID_MIN)
+			|| (usb_cdc_scup_buffer[4] > AD4130_DEVICE_ID_MAX)
+			|| (usb_cdc_scup_buffer[5] > AD4130_CHANNEL_MAX)
 			|| (usb_cdc_scup_buffer[6] != 0U)
 			|| (usb_cdc_scup_buffer[7] != 0U)
 	)

@@ -15,7 +15,7 @@ typedef struct
 	uint16_t cs_pin;
 } AD4130Device_t;
 
-static AD4130Device_t ad4130_devices[2] = {
+static AD4130Device_t ad4130_devices[AD4130_DEVICE_COUNT] = {
 	{
 		.hspi = &hspi3,
 		.cs_port = SPI3_CS1_GPIO_Port,
@@ -39,7 +39,7 @@ static const float ad4130_iout_values[8] = {
 	200.0e-6f
 };
 
-AD4130Iouts_t ad4130_iouts[2] = {0};
+AD4130Iouts_t ad4130_iouts[AD4130_DEVICE_COUNT] = {0};
 
 
 /* ------------------------------------------------------------------------ */
@@ -125,7 +125,7 @@ ErrorCode_t AD4130_Check_Status_Error(
 	ErrorCode_t result;
 	uint16_t error = 0U;
 
-	if ((adc_device_id < 1U) || (adc_device_id > 2U))
+	if ((adc_device_id < AD4130_DEVICE_ID_MIN) || (adc_device_id > AD4130_DEVICE_ID_MAX))
 	{
 		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
@@ -158,7 +158,7 @@ ErrorCode_t AD4130_Check_Status_Error(
 
 static AD4130Device_t *AD4130_Get_Device(uint8_t adc_device_id)
 {
-	if ((adc_device_id < 1U) || (adc_device_id > 2U))
+	if ((adc_device_id < AD4130_DEVICE_ID_MIN) || (adc_device_id > AD4130_DEVICE_ID_MAX))
 	{
 		return NULL;  /* Invalid ADC device ID */
 	}
