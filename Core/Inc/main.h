@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define ETH_PHY_RESET_Pin GPIO_PIN_2
+#define ETH_PHY_RESET_GPIO_Port GPIOE
 #define AD4130_SYNC_Pin GPIO_PIN_15
 #define AD4130_SYNC_GPIO_Port GPIOA
 #define SPI3_CS1_Pin GPIO_PIN_0

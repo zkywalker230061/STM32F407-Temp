@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "lwip.h"
 #include "rtc.h"
 #include "spi.h"
 #include "tim.h"
@@ -36,6 +35,7 @@
 #include "application/usb_comm.h"
 #include "mb.h"
 #include "communication/modbus/modbus_registers.h"
+#include "lwip.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -106,7 +106,6 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_SPI3_Init();
   MX_USART3_UART_Init();
-  // MX_LWIP_Init();
   MX_RTC_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
@@ -171,6 +170,13 @@ int main(void)
 	{
 		Error_Handler();
 	}
+
+	/* Ethernet and LwIP initialize */
+	HAL_GPIO_WritePin(ETH_PHY_RESET_GPIO_Port, ETH_PHY_RESET_Pin, GPIO_PIN_RESET);
+	HAL_Delay(50);
+	HAL_GPIO_WritePin(ETH_PHY_RESET_GPIO_Port, ETH_PHY_RESET_Pin, GPIO_PIN_SET);
+	HAL_Delay(50);
+	// MX_LWIP_Init();
 
   /* USER CODE END 2 */
 
