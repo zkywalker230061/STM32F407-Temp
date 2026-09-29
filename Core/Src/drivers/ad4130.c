@@ -556,9 +556,9 @@ ErrorCode_t AD4130_Channel_0(
 	uint8_t tx[3] = {0};
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
-	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
+	/* ENABLE_0,SETUP_0,AINP_0(AIN0),AINM_0(AIN1),I_OUT0_CH_0(AIN6) */
 	channel_0_val = (
-			0b100000000100001100010000
+			0b100000000000000100000110
 			| ((uint32_t)iout_level << 20)
 	);
 
@@ -593,9 +593,9 @@ ErrorCode_t AD4130_Channel_1(
 	uint8_t tx[3] = {0};
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
-	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
+	/* ENABLE_1,SETUP_1,AINP_1(AIN8),AINM_1(AIN9),I_OUT0_CH_1(AIN7) */
 	channel_1_val = (
-			0b100000001100011101010100
+			0b100000010000100100000111
 			| ((uint32_t)iout_level << 20)
 	);
 
@@ -630,9 +630,9 @@ ErrorCode_t AD4130_Channel_2(
 	uint8_t tx[3] = {0};
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
-	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
+	/* ENABLE_2,SETUP_2,AINP_2(AIN11),AINM_2(AIN12),I_OUT0_CH_2(AIN10) */
 	channel_2_val = (
-			0b100000010100101110011000
+			0b100000010110110000001010
 			| ((uint32_t)iout_level << 20)
 	);
 
@@ -667,9 +667,9 @@ ErrorCode_t AD4130_Channel_3(
 	uint8_t tx[3] = {0};
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
-	/* ENABLE_0,SETUP_0,AINP_0,AINM_0,I_OUT0_CH_0 */
+	/* ENABLE_3,SETUP_3,AINP_3(AIN14),AINM_3(AIN15),I_OUT0_CH_3(AIN13) */
 	channel_3_val = (
-			0b100000011100111111011100
+			0b100000011100111100001101
 			| ((uint32_t)iout_level << 20)
 	);
 
