@@ -11,8 +11,53 @@
 #define SENSOR_ADC_INITIALIZE_RETRY_COUNT     3U
 #define SENSOR_ADC_INITIALIZE_RETRY_DELAY_MS  100U
 
+static ErrorCode_t initialize_once(void);
+
 
 ErrorCode_t sensor_adc_initialize(void)
+{
+	ErrorCode_t result;
+
+	result = initialize_once();
+	if (
+			(result == ERROR_CODE_NONE)
+			|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
+	)
+	{
+		return result;
+	}
+
+	for (
+			uint8_t retry = 0U;
+			retry < SENSOR_ADC_INITIALIZE_RETRY_COUNT;
+			retry++
+	)
+	{
+		HAL_Delay(SENSOR_ADC_INITIALIZE_RETRY_DELAY_MS);
+		result = initialize_once();
+		if (
+				(result == ERROR_CODE_NONE)
+				|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
+		)
+		{
+			printf(
+					"ADC initialization recovered after %u retries\r\n",
+					(unsigned int)(retry+1U)
+			);
+			return result;
+		}
+	}
+
+	printf(
+			"%d: ADC initialization failed after %u retries\r\n",
+			(int)result,
+			(unsigned int)SENSOR_ADC_INITIALIZE_RETRY_COUNT
+	);
+
+	return result;
+}
+
+static ErrorCode_t initialize_once(void)
 {
 	ErrorCode_t result;
 	AD4130InitResult_t init_result[AD4130_DEVICE_COUNT] = {0};
@@ -127,46 +172,4 @@ ErrorCode_t sensor_adc_initialize(void)
 	}
 
 	return ERROR_CODE_NONE;
-}
-
-ErrorCode_t sensor_adc_initialize_handle_error(ErrorCode_t error_code)
-{
-	ErrorCode_t result = error_code;
-
-	if (
-			(result == ERROR_CODE_NONE)
-			|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
-	)
-	{
-		return result;
-	}
-
-	for (
-			uint8_t retry = 0U;
-			retry < SENSOR_ADC_INITIALIZE_RETRY_COUNT;
-			retry++
-	)
-	{
-		HAL_Delay(SENSOR_ADC_INITIALIZE_RETRY_DELAY_MS);
-		result = sensor_adc_initialize();
-		if (
-				(result == ERROR_CODE_NONE)
-				|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
-		)
-		{
-			printf(
-					"ADC initialization recovered after %u retries\r\n",
-					(unsigned int)(retry+1U)
-			);
-			return result;
-		}
-	}
-
-	printf(
-			"%d: ADC initialization failed after %u retries\r\n",
-			(int)result,
-			(unsigned int)SENSOR_ADC_INITIALIZE_RETRY_COUNT
-	);
-
-	return result;
 }

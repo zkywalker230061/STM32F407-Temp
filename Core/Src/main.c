@@ -115,7 +115,6 @@ int main(void)
 
 	/* sensor_adc: ADC initialize */
 	adc_result = sensor_adc_initialize();
-	adc_result = sensor_adc_initialize_handle_error(adc_result);
 	(void)usb_comm_process();
 	if (
 			(adc_result != ERROR_CODE_NONE)

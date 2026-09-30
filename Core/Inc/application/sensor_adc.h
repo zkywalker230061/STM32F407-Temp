@@ -9,8 +9,6 @@ extern "C" {
 
 ErrorCode_t sensor_adc_initialize(void);
 
-ErrorCode_t sensor_adc_initialize_handle_error(ErrorCode_t error_code);
-
 #ifdef __cplusplus
 }
 #endif

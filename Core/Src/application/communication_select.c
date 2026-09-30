@@ -245,6 +245,11 @@ static ErrorCode_t enable_modbus_tcp(void)
 
 static ErrorCode_t disable_modbus_tcp(void)
 {
+	HAL_GPIO_WritePin(
+			ETH_PHY_RESET_GPIO_Port,
+			ETH_PHY_RESET_Pin,
+			GPIO_PIN_RESET
+	);
 	/* Modbus TCP disable is not implemented yet. */
 	return ERROR_CODE_NONE;
 }
