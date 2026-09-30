@@ -33,9 +33,8 @@
 #include "application/sensor_coeffs.h"
 #include "application/sensor_read.h"
 #include "application/usb_comm.h"
-#include "mb.h"
+#include "application/communication_select.h"
 #include "communication/modbus/modbus_registers.h"
-#include "lwip.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,9 +44,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MODBUS_SLAVE_ADDRESS  1U
-#define MODBUS_PORT           0U
-#define MODBUS_BAUD_RATE      115200UL
 
 /* USER CODE END PD */
 
@@ -59,7 +55,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-static uint8_t modbus_rtu_initialized;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -111,8 +107,8 @@ int main(void)
 
 	ErrorCode_t adc_result;
 	ErrorCode_t coeffs_result;
+	ErrorCode_t communication_result;
 	ErrorCode_t read_result;
-	eMBErrorCode modbus_rtu_result;
 
 
 	HAL_Delay(2000);
@@ -142,32 +138,12 @@ int main(void)
 		Error_Handler();
 	}
 
-	/* Modbus RTU initialize */
-	modbus_rtu_result = eMBInit(
-			MB_RTU,
-			MODBUS_SLAVE_ADDRESS,
-			MODBUS_PORT,
-			MODBUS_BAUD_RATE,
-			MB_PAR_EVEN
-	);
-	if (modbus_rtu_result != MB_ENOERR)
+	/* Industrial communication initialize */
+	communication_result = communication_select_initialize();
+	if (communication_result != ERROR_CODE_NONE)
 	{
 		Error_Handler();
 	}
-
-	modbus_rtu_result = eMBEnable();
-	if (modbus_rtu_result != MB_ENOERR)
-	{
-		Error_Handler();
-	}
-	modbus_rtu_initialized = 1U;
-
-	/* Ethernet and LwIP initialize */
-	HAL_GPIO_WritePin(ETH_PHY_RESET_GPIO_Port, ETH_PHY_RESET_Pin, GPIO_PIN_RESET);
-	HAL_Delay(50);
-	HAL_GPIO_WritePin(ETH_PHY_RESET_GPIO_Port, ETH_PHY_RESET_Pin, GPIO_PIN_SET);
-	HAL_Delay(50);
-	// MX_LWIP_Init();
 
   /* USER CODE END 2 */
 
@@ -181,16 +157,6 @@ int main(void)
 
 		/* ADC read */
 		read_result = read_sensor();
-
-		/* Modbus RTU poll */
-		modbus_rtu_result = eMBPoll();
-
-		/* Ethernet and LwIP process */
-		// MX_LWIP_Process();
-
-		/* USB communication process */
-		(void)usb_comm_process();
-
 		if (
 				(read_result != ERROR_CODE_NONE)
 				&& (read_result != ERROR_CODE_MEASUREMENT_NOT_READY)
@@ -198,10 +164,16 @@ int main(void)
 		{
 			Error_Handler();
 		}
-		if (modbus_rtu_result != MB_ENOERR)
+
+		/* Industrial communication process */
+		communication_result = communication_select_process();
+		if (communication_result != ERROR_CODE_NONE)
 		{
 			Error_Handler();
 		}
+
+		/* USB communication process */
+		(void)usb_comm_process();
 	}
 
   /* USER CODE END 3 */
@@ -276,10 +248,7 @@ void Error_Handler(void)
   while (1)
   {
 		(void)usb_comm_process();
-		if (modbus_rtu_initialized != 0U)
-		{
-			(void)eMBPoll();
-		}
+		(void)communication_select_process();
   }
   /* USER CODE END Error_Handler_Debug */
 }

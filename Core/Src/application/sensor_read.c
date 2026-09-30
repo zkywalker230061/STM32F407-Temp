@@ -3,10 +3,10 @@
 #include <stdio.h>
 
 #include "common/ad4130_config_file.h"
+#include "common/system_config.h"
 #include "drivers/ad4130_measurement.h"
 #include "application/sensor_coeffs.h"
 #include "application/sensor_fit.h"
-#include "application/usb_comm.h"
 #include "communication/modbus/modbus_registers.h"
 
 
@@ -113,7 +113,7 @@ ErrorCode_t read_sensor(void)
 		read_count++;
 
 		/* usb comm measurement log */
-		if (usb_comm_measurement_log_enabled() != 0U)
+		if (system_config_measurement_log_enabled() != 0U)
 		{
 			printf(
 					"%u-%u: R-%.4f ohm, T-%.5f K\r\n",

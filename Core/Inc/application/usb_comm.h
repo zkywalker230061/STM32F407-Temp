@@ -12,8 +12,6 @@ extern "C" {
 
 ErrorCode_t usb_comm_process(void);
 
-uint8_t usb_comm_measurement_log_enabled(void);
-
 ErrorCode_t usb_comm_write(
 		const uint8_t *data,
 		uint16_t length

@@ -5,7 +5,9 @@
 
 #include "stm32f4xx_hal.h"
 
+#include "common/system_config.h"
 #include "application/sensor_coeffs.h"
+#include "application/communication_select.h"
 #include "communication/usb_cdc/usb_cdc.h"
 #include "storage/sensor_coeffs_storage.h"
 
@@ -21,7 +23,6 @@ static uint8_t usb_comm_tx_read_index;
 static uint8_t usb_comm_tx_write_index;
 static uint8_t usb_comm_tx_count;
 static uint8_t usb_comm_tx_transmitting;
-static uint8_t usb_comm_measurement_log_enable;
 static uint8_t usb_comm_reset_pending;
 
 static void usb_comm_reset_transmit(void);
@@ -110,9 +111,63 @@ ErrorCode_t usb_comm_process(void)
 			break;
 		}
 
+		case USB_CDC_COMMAND_MRTU:
+		{
+			command_result = communication_select_mode(
+					SYSTEM_COMMUNICATION_MODE_MODBUS_RTU
+			);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: Modbus RTU mode selection error\r\n",
+						(int)command_result
+				);
+				return command_result;
+			}
+			printf("Modbus RTU mode selected\r\n");
+			break;
+		}
+
+		case USB_CDC_COMMAND_MTCP:
+		{
+			command_result = communication_select_mode(
+					SYSTEM_COMMUNICATION_MODE_MODBUS_TCP
+			);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: Modbus TCP mode selection error\r\n",
+						(int)command_result
+				);
+				return command_result;
+			}
+			printf("Modbus TCP mode selected\r\n");
+			break;
+		}
+
+		case USB_CDC_COMMAND_PBUS:
+		{
+			command_result = communication_select_mode(
+					SYSTEM_COMMUNICATION_MODE_PROFIBUS
+			);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: PROFIBUS mode selection error\r\n",
+						(int)command_result
+				);
+				return command_result;
+			}
+			printf("PROFIBUS mode selected\r\n");
+			break;
+		}
+
 		case USB_CDC_COMMAND_LOGE:
 		{
-			usb_comm_measurement_log_enable = 1U;
+			system_config_set_measurement_log_enabled(1U);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			printf("Measurement log enabled\r\n");
 			command_result = ERROR_CODE_NONE;
@@ -121,9 +176,27 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_LOGD:
 		{
-			usb_comm_measurement_log_enable = 0U;
+			system_config_set_measurement_log_enabled(0U);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			printf("Measurement log disabled\r\n");
+			command_result = ERROR_CODE_NONE;
+			break;
+		}
+
+		case USB_CDC_COMMAND_SYNE:
+		{
+			system_config_set_synchronized_measurement_enabled(1U);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			printf("Synchronized measurement enabled\r\n");
+			command_result = ERROR_CODE_NONE;
+			break;
+		}
+
+		case USB_CDC_COMMAND_SYND:
+		{
+			system_config_set_synchronized_measurement_enabled(0U);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			printf("Synchronized measurement disabled\r\n");
 			command_result = ERROR_CODE_NONE;
 			break;
 		}
@@ -220,11 +293,6 @@ ErrorCode_t usb_comm_process(void)
 	usb_comm_tx_read_index = batch_read_index;
 	usb_comm_tx_count -= batch_count;
 	return ERROR_CODE_NONE;
-}
-
-uint8_t usb_comm_measurement_log_enabled(void)
-{
-	return usb_comm_measurement_log_enable;
 }
 
 ErrorCode_t usb_comm_write(
