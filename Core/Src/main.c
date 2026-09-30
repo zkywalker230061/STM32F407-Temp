@@ -62,6 +62,7 @@
 /* USER CODE BEGIN PV */
 static float resistance[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
 static float temperature[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
+static uint8_t modbus_rtu_initialized;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -111,7 +112,6 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
-	ErrorCode_t usb_result;
 	ErrorCode_t adc_result;
 	ErrorCode_t coeffs_result;
 	ErrorCode_t read_result;
@@ -122,14 +122,8 @@ int main(void)
 
 	/* sensor_adc: ADC initialize */
 	adc_result = sensor_adc_initialize();
-	usb_result = usb_comm_process();
-	if (
-			(usb_result != ERROR_CODE_NONE)
-			&& (usb_result != ERROR_CODE_USB_COMM_NOT_READY)
-	)
-	{
-		Error_Handler();
-	}
+	adc_result = sensor_adc_initialize_handle_error(adc_result);
+	(void)usb_comm_process();
 	if (
 			(adc_result != ERROR_CODE_NONE)
 			&& (adc_result != ERROR_CODE_MEASUREMENT_STATUS_POR)
@@ -140,15 +134,13 @@ int main(void)
 
 	/* sensor_coeffs: load, decode */
 	coeffs_result = sensor_coeffs_initialize();
-	usb_result = usb_comm_process();
+	(void)usb_comm_process();
 	if (
-			(usb_result != ERROR_CODE_NONE)
-			&& (usb_result != ERROR_CODE_USB_COMM_NOT_READY)
+			(coeffs_result != ERROR_CODE_NONE)
+			&& (coeffs_result != ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT)
+			&& (coeffs_result != ERROR_CODE_COEFFS_DECODE_ILLEGAL_VERSION)
+			&& (coeffs_result != ERROR_CODE_COEFFS_DECODE_CRC)
 	)
-	{
-		Error_Handler();
-	}
-	if (coeffs_result != ERROR_CODE_NONE)
 	{
 		Error_Handler();
 	}
@@ -171,6 +163,7 @@ int main(void)
 	{
 		Error_Handler();
 	}
+	modbus_rtu_initialized = 1U;
 
 	/* Ethernet and LwIP initialize */
 	HAL_GPIO_WritePin(ETH_PHY_RESET_GPIO_Port, ETH_PHY_RESET_Pin, GPIO_PIN_RESET);
@@ -189,18 +182,18 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+		/* ADC read */
+		read_result = read_sensor();
+
 		/* Modbus RTU poll */
 		modbus_rtu_result = eMBPoll();
-		if (modbus_rtu_result != MB_ENOERR)
-		{
-			Error_Handler();
-		}
 
 		/* Ethernet and LwIP process */
 		// MX_LWIP_Process();
 
-		/* ADC read */
-		read_result = read_sensor();
+		/* USB communication process */
+		(void)usb_comm_process();
+
 		if (
 				(read_result != ERROR_CODE_NONE)
 				&& (read_result != ERROR_CODE_MEASUREMENT_NOT_READY)
@@ -208,14 +201,7 @@ int main(void)
 		{
 			Error_Handler();
 		}
-
-		/* USB communication process */
-		usb_result = usb_comm_process();
-		if (
-				(usb_result != ERROR_CODE_NONE)
-				&& (usb_result != ERROR_CODE_USB_COMM_NOT_READY)
-				&& (usb_result != ERROR_CODE_COEFFS_TRANSFER_NOT_READY)
-		)
+		if (modbus_rtu_result != MB_ENOERR)
 		{
 			Error_Handler();
 		}
@@ -293,12 +279,45 @@ static ErrorCode_t read_sensor(void)
 		}
 		if (result != ERROR_CODE_NONE)
 		{
-			printf(
-					"%d: ADC %u read error\r\n",
-					(int)result,
-					(unsigned int)adc_device_id
-			);
-			return result;
+			if (
+					(channel <= AD4130_CHANNEL_MAX)
+					&& (
+							(result == ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT)
+							|| (result == ERROR_CODE_MEASUREMENT_BELOW_RANGE)
+							|| (result == ERROR_CODE_MEASUREMENT_ABOVE_RANGE)
+					)
+			)
+			{
+				printf(
+						"%d: ADC %u CHANNEL_%u read error\r\n",
+						(int)result,
+						(unsigned int)adc_device_id,
+						(unsigned int)channel
+				);
+				vMBRegInputSetChannelError(adc_device_id-1U, channel);
+			}
+			else
+			{
+				printf(
+						"%d: ADC %u read error\r\n",
+						(int)result,
+						(unsigned int)adc_device_id
+				);
+				vMBRegInputSetADCError(adc_device_id-1U);
+			}
+
+			if (
+					(result == ERROR_CODE_AD4130_ILLEGAL_PARAM)
+					|| (result == ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID)
+					|| (result == ERROR_CODE_AD4130_ILLEGAL_IOUT)
+					|| (result == ERROR_CODE_AD4130_ILLEGAL_WRITE_LENGTH)
+					|| (result == ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM)
+			)
+			{
+				return result;
+			}
+
+			continue;
 		}
 
 		/* sensor_fit: temperature fit */
@@ -315,7 +334,13 @@ static ErrorCode_t read_sensor(void)
 					(unsigned int)adc_device_id,
 					(unsigned int)channel
 			);
-			return fit_result;
+			vMBRegInputSetChannelError(adc_device_id-1U, channel);
+			if (fit_result == ERROR_CODE_SENSOR_FIT_ILLEGAL_PARAM)
+			{
+				return fit_result;
+			}
+
+			continue;
 		}
 
 		resistance[adc_device_id - 1U][channel] = measured_resistance;
@@ -358,9 +383,21 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
+  /* __disable_irq(); */
+
+	printf("%d: fatal system error\r\n", (int)ERROR_CODE_SYSTEM_FATAL);
+	for (uint8_t adc_index = 0U; adc_index < AD4130_DEVICE_COUNT; adc_index++)
+	{
+		vMBRegInputSetADCError(adc_index);
+	}
+
   while (1)
   {
+		(void)usb_comm_process();
+		if (modbus_rtu_initialized != 0U)
+		{
+			(void)eMBPoll();
+		}
   }
   /* USER CODE END Error_Handler_Debug */
 }

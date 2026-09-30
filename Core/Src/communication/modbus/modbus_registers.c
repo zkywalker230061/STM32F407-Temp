@@ -11,6 +11,7 @@
 
 /* ----------------------- Defines ------------------------------------------*/
 #define MB_CHANNEL_STATUS_VALID             1U
+#define MB_CHANNEL_STATUS_ERROR             0xFFFFU  /* -1 as int16_t */
 
 /* ----------------------- Type definitions ---------------------------------*/
 typedef union
@@ -59,6 +60,40 @@ vMBRegInputUpdate( uint8_t ucADCIndex, uint8_t ucChannel,
     usRegInputBuf[usResistanceIndex + 1U] =
         ( USHORT )( xResistance.ulValue & 0xFFFFU );
     usRegInputBuf[usStatusIndex] = MB_CHANNEL_STATUS_VALID;
+}
+
+void
+vMBRegInputSetChannelError( uint8_t ucADCIndex, uint8_t ucChannel )
+{
+    USHORT usChannelIndex;
+    USHORT usStatusIndex;
+
+    if( ( ucADCIndex >= AD4130_DEVICE_COUNT )
+        || ( ucChannel >= AD4130_SENSOR_CHANNEL_COUNT ) )
+    {
+        return;
+    }
+
+    usChannelIndex = ( USHORT )( ucADCIndex
+                                 * AD4130_SENSOR_CHANNEL_COUNT + ucChannel );
+    usStatusIndex = ( USHORT )( MB_INPUT_STATUS_OFFSET + usChannelIndex );
+    usRegInputBuf[usStatusIndex] = MB_CHANNEL_STATUS_ERROR;
+}
+
+void
+vMBRegInputSetADCError( uint8_t ucADCIndex )
+{
+    uint8_t ucChannel;
+
+    if( ucADCIndex >= AD4130_DEVICE_COUNT )
+    {
+        return;
+    }
+
+    for( ucChannel = 0U; ucChannel < AD4130_SENSOR_CHANNEL_COUNT; ucChannel++ )
+    {
+        vMBRegInputSetChannelError( ucADCIndex, ucChannel );
+    }
 }
 
 eMBErrorCode

@@ -17,5 +17,7 @@
 
 void vMBRegInputUpdate( uint8_t ucADCIndex, uint8_t ucChannel,
                         float fResistance, float fTemperature );
+void vMBRegInputSetChannelError( uint8_t ucADCIndex, uint8_t ucChannel );
+void vMBRegInputSetADCError( uint8_t ucADCIndex );
 
 #endif

@@ -54,6 +54,13 @@ ErrorCode_t AD4130_Read_Resistance(
 
 	status = data_status & 0xFFU;
 	data = (data_status >> 8) & 0xFFFFFFU;
+
+	*channel = status & 0x0FU;
+	if (*channel > AD4130_CHANNEL_MAX)
+	{
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
+	}
+
 	result = AD4130_Check_Status_Error(adc_device_id, status);
 	if (result != ERROR_CODE_NONE)
 	{
@@ -62,12 +69,6 @@ ErrorCode_t AD4130_Read_Resistance(
 	if ((status & 0x80U) != 0U)
 	{
 		return ERROR_CODE_MEASUREMENT_NOT_READY;
-	}
-
-	*channel = status & 0x0FU;
-	if (*channel > AD4130_CHANNEL_MAX)
-	{
-		return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
 	}
 
 	switch (*channel)
