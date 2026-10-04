@@ -108,7 +108,7 @@ ErrorCode_t Sensor_Coeffs_Decode(
 
 	if (
 			(data[0] != 'S') || (data[1] != 'C')
-			|| (data[2] != 'V') || (data[3] != '1')
+			|| (data[2] != 'B') || (data[3] != 'N')
 	)
 	{
 		return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
