@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "common/error_code.h"
+#include "drivers/ad4130.h"
 
 
 #ifdef __cplusplus
@@ -14,6 +15,13 @@ ErrorCode_t AD4130_Read_Resistance(
 		uint8_t adc_device_id,
 		uint8_t *channel,
 		float *resistance
+);
+ErrorCode_t AD4130_Read_Resistance_FIFO(
+		uint8_t adc_device_id,
+		uint8_t *channels,
+		float *resistances,
+		ErrorCode_t *sample_results,
+		uint8_t sample_count
 );
 
 #ifdef __cplusplus

@@ -119,7 +119,7 @@ static ErrorCode_t initialize_once(void)
 
 	for (uint8_t i = 0U; i < AD4130_DEVICE_COUNT; i++)
 	{
-		result = AD4130_Channel_0(i+1U, 2U);  /* I_OUT0_0 */
+		result = AD4130_Channel_0(i+1U, 2U);
 		if (result != ERROR_CODE_NONE)
 		{
 			printf(
@@ -130,17 +130,17 @@ static ErrorCode_t initialize_once(void)
 			return result;
 		}
 
-//		result = AD4130_Channel_1(i+1U, 2U);
-//		if (result != ERROR_CODE_NONE)
-//		{
-//			printf(
-//					"%d: ADC %u CHANNEL_1 setup error\r\n",
-//					(int)result,
-//					(unsigned int)(i+1U)
-//			);
-//			return result;
-//		}
-//
+		result = AD4130_Channel_1(i+1U, 2U);
+		if (result != ERROR_CODE_NONE)
+		{
+			printf(
+					"%d: ADC %u CHANNEL_1 setup error\r\n",
+					(int)result,
+					(unsigned int)(i+1U)
+			);
+			return result;
+		}
+
 //		result = AD4130_Channel_2(i+1U, 2U);
 //		if (result != ERROR_CODE_NONE)
 //		{

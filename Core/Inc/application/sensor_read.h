@@ -10,6 +10,8 @@ extern "C" {
 
 ErrorCode_t read_sensor(void);
 
+void sensor_read_reset_synchronized_conversion(void);
+
 #ifdef __cplusplus
 }
 #endif

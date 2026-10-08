@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "common/error_code.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,7 +43,7 @@ void system_config_set_measurement_log_enabled(uint8_t enabled);
 
 uint8_t system_config_synchronized_measurement_enabled(void);
 
-void system_config_set_synchronized_measurement_enabled(uint8_t enabled);
+ErrorCode_t system_config_set_synchronized_measurement_enabled(uint8_t enabled);
 
 #ifdef __cplusplus
 }

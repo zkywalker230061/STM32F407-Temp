@@ -185,19 +185,33 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_SYNE:
 		{
-			system_config_set_synchronized_measurement_enabled(1U);
+			command_result = system_config_set_synchronized_measurement_enabled(1U);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: Synchronized measurement enable error\r\n",
+						(int)command_result
+				);
+				return command_result;
+			}
 			printf("Synchronized measurement enabled\r\n");
-			command_result = ERROR_CODE_NONE;
 			break;
 		}
 
 		case USB_CDC_COMMAND_SYND:
 		{
-			system_config_set_synchronized_measurement_enabled(0U);
+			command_result = system_config_set_synchronized_measurement_enabled(0U);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: Synchronized measurement disable error\r\n",
+						(int)command_result
+				);
+				return command_result;
+			}
 			printf("Synchronized measurement disabled\r\n");
-			command_result = ERROR_CODE_NONE;
 			break;
 		}
 

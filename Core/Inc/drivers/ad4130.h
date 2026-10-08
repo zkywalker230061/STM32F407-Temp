@@ -20,8 +20,17 @@ typedef struct
 	uint16_t error;
 } AD4130InitResult_t;
 
+typedef struct
+{
+	uint8_t header;
+	uint32_t data;
+} AD4130FIFOSample_t;
+
 #define AD4130_VREF		1.25f
 #define AD4130_GAIN		128.0f
+
+#define AD4130_CONVERSION_MODE_NORMAL	0x00U
+#define AD4130_CONVERSION_MODE_SYNC		0x0AU
 
 typedef struct
 {
@@ -148,6 +157,25 @@ ErrorCode_t AD4130_Write(
 		uint16_t length
 );
 ErrorCode_t AD4130_Reset(uint8_t adc_device_id);
+void AD4130_Synchronize(void);
+ErrorCode_t AD4130_Set_Conversion_Mode(
+		uint8_t adc_device_id,
+		uint8_t mode
+);
+ErrorCode_t AD4130_FIFO_Enable(
+		uint8_t adc_device_id,
+		uint8_t watermark
+);
+ErrorCode_t AD4130_FIFO_Disable(uint8_t adc_device_id);
+ErrorCode_t AD4130_FIFO_Ready(
+		uint8_t adc_device_id,
+		uint8_t *ready
+);
+ErrorCode_t AD4130_FIFO_Read(
+		uint8_t adc_device_id,
+		AD4130FIFOSample_t *samples,
+		uint8_t sample_count
+);
 
 /* ------------------------------------------------------------------------ */
 

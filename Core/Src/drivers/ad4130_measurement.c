@@ -12,6 +12,12 @@
 										           /* 7.5 mV at 10 µA */
 #define AD4130_DATA_100NA_OVER_RANGE	0xF33333U  /* 95% */
 
+static ErrorCode_t AD4130_Convert_Resistance(
+		uint8_t adc_device_id,
+		uint8_t channel,
+		uint32_t data,
+		float *resistance
+);
 static ErrorCode_t AD4130_Get_Autorange_Level(
 		uint8_t current_level,
 		uint32_t data,
@@ -26,14 +32,9 @@ ErrorCode_t AD4130_Read_Resistance(
 )
 {
 	ErrorCode_t result;
-	ErrorCode_t autorange_result;
 	uint32_t data_status = 0;
 	uint32_t data = 0;
 	uint8_t status = 0;
-	float iout;
-	float voltage;
-	uint8_t iout_level;
-	uint8_t new_iout_level;
 
 	if ((adc_device_id < AD4130_DEVICE_ID_MIN) || (adc_device_id > AD4130_DEVICE_ID_MAX))
 	{
@@ -71,7 +72,80 @@ ErrorCode_t AD4130_Read_Resistance(
 		return ERROR_CODE_MEASUREMENT_NOT_READY;
 	}
 
-	switch (*channel)
+	return AD4130_Convert_Resistance(
+			adc_device_id,
+			*channel,
+			data,
+			resistance
+	);
+}
+
+ErrorCode_t AD4130_Read_Resistance_FIFO(
+		uint8_t adc_device_id,
+		uint8_t *channels,
+		float *resistances,
+		ErrorCode_t *sample_results,
+		uint8_t sample_count
+)
+{
+	ErrorCode_t result;
+	AD4130FIFOSample_t samples[AD4130_SENSOR_CHANNEL_COUNT];
+
+	if (
+			(channels == NULL)
+			|| (resistances == NULL)
+			|| (sample_results == NULL)
+	)
+	{
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
+	}
+	if ((sample_count == 0U) || (sample_count > AD4130_SENSOR_CHANNEL_COUNT))
+	{
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
+	}
+
+	result = AD4130_FIFO_Read(adc_device_id, samples, sample_count);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	for (uint8_t i = 0U; i < sample_count; i++)
+	{
+		channels[i] = samples[i].header & 0x0FU;
+		resistances[i] = 0.0f;
+		if (channels[i] > AD4130_CHANNEL_MAX)
+		{
+			sample_results[i] = ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
+			continue;
+		}
+
+		sample_results[i] = AD4130_Convert_Resistance(
+				adc_device_id,
+				channels[i],
+				samples[i].data,
+				&resistances[i]
+		);
+	}
+
+	return ERROR_CODE_NONE;
+}
+
+static ErrorCode_t AD4130_Convert_Resistance(
+		uint8_t adc_device_id,
+		uint8_t channel,
+		uint32_t data,
+		float *resistance
+)
+{
+	ErrorCode_t result;
+	ErrorCode_t autorange_result;
+	float iout;
+	float voltage;
+	uint8_t iout_level;
+	uint8_t new_iout_level;
+
+	switch (channel)
 	{
 		case 0U:
 			iout = ad4130_iouts[adc_device_id - 1U].i_1;
@@ -126,7 +200,7 @@ ErrorCode_t AD4130_Read_Resistance(
 
 	if (new_iout_level != iout_level)
 	{
-		switch (*channel)
+		switch (channel)
 		{
 			case 0U:
 				result = AD4130_Channel_0(adc_device_id, new_iout_level);
