@@ -157,6 +157,13 @@ ErrorCode_t AD4130_Write(
 		uint16_t length
 );
 ErrorCode_t AD4130_Reset(uint8_t adc_device_id);
+ErrorCode_t AD4130_Internal_Calibrate(
+		uint8_t adc_device_id,
+		uint8_t channel,
+		uint8_t *setup_pointer,
+		uint32_t *gain_value,
+		uint32_t *offset_value
+);
 void AD4130_Synchronize(void);
 ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode);
 ErrorCode_t AD4130_FIFO_Enable(uint8_t adc_device_id, uint8_t watermark);

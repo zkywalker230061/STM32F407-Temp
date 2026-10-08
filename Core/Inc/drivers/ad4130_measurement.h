@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 #include "common/error_code.h"
-#include "drivers/ad4130.h"
 
 
 #ifdef __cplusplus

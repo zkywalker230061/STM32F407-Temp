@@ -39,10 +39,30 @@ static const float ad4130_iout_values[8] = {
 	200.0e-6f
 };
 
+static const uint8_t ad4130_iout_config_values[8] = {
+	0b0000,  /* Off */
+	0b0111,  /* 100 nA */
+	0b0001,  /* 10 μA */
+	0b0010,  /* 20 μA */
+	0b0011,  /* 50 μA */
+	0b0100,  /* 100 μA */
+	0b0101,  /* 150 μA */
+	0b0110   /* 200 μA */
+};
+
 AD4130Iouts_t ad4130_iouts[AD4130_DEVICE_COUNT] = {0};
 
 static ErrorCode_t AD4130_Config(uint8_t adc_device_id);
 static ErrorCode_t AD4130_Filter(uint8_t adc_device_id);
+static ErrorCode_t AD4130_Set_IOUT_Level(
+		uint8_t adc_device_id,
+		uint8_t setup,
+		uint8_t iout_level
+);
+static ErrorCode_t AD4130_Run_Calibration(
+		uint8_t adc_device_id,
+		uint8_t mode
+);
 
 
 /* ------------------------------------------------------------------------ */
@@ -425,6 +445,186 @@ ErrorCode_t AD4130_Reset(uint8_t adc_device_id)
 	return AD4130_Convert_HAL_Status(status);
 }
 
+static ErrorCode_t AD4130_Run_Calibration(
+		uint8_t adc_device_id,
+		uint8_t mode
+)
+{
+	ErrorCode_t result;
+	uint16_t control_value;
+	uint8_t status;
+	uint8_t tx[2] = {0};
+
+	result = AD4130_Read_16_Bit(
+			adc_device_id,
+			AD4130_ADC_CONTROL,
+			&control_value
+	);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	/* Bits 5-2: MODE */
+	control_value &= 0b1111111111000011U;
+	control_value |= (uint16_t) mode << 2;
+
+	tx[0] = (control_value >> 8) & 0xFFU;
+	tx[1] = control_value & 0xFFU;
+	result = AD4130_Write(adc_device_id, AD4130_ADC_CONTROL, tx, 2U);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	while (1)
+	{
+		result = AD4130_Read_8_Bit(adc_device_id, AD4130_STATUS, &status);
+		if (result != ERROR_CODE_NONE)
+		{
+			return result;
+		}
+		if ((status & 0x80U) == 0U)
+		{
+			return AD4130_Check_Status_Error(adc_device_id, status);
+		}
+		HAL_Delay(1U);
+	}
+}
+
+ErrorCode_t AD4130_Internal_Calibrate(
+		uint8_t adc_device_id,
+		uint8_t channel,
+		uint8_t *setup_pointer,
+		uint32_t *gain_value,
+		uint32_t *offset_value
+)
+{
+	ErrorCode_t result;
+	ErrorCode_t restore_result;
+	uint32_t channel_values[AD4130_SENSOR_CHANNEL_COUNT] = {0};
+	uint32_t calibrated_gain = 0U;
+	uint32_t calibrated_offset = 0U;
+	uint32_t offset_default = 0x800000U;
+	uint8_t setup;
+	uint8_t tx[3] = {0};
+
+	if (
+			(channel >= AD4130_SENSOR_CHANNEL_COUNT)
+			|| (setup_pointer == NULL)
+			|| (gain_value == NULL)
+			|| (offset_value == NULL)
+	)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+	*setup_pointer = 0xFFU;
+	*gain_value = 0U;
+	*offset_value = 0U;
+
+	for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
+	{
+		result = AD4130_Read_24_Bit(
+				adc_device_id,
+				(uint8_t) (AD4130_CHANNEL_0+i),
+				&channel_values[i]
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			return result;
+		}
+	}
+
+	if ((channel_values[channel] & 0x800000U) == 0U)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
+	{
+		uint32_t channel_value = channel_values[i];
+
+		if (i != channel)
+		{
+			channel_value &= 0x7FFFFFU;
+		}
+		tx[0] = (channel_value >> 16) & 0xFFU;
+		tx[1] = (channel_value >> 8) & 0xFFU;
+		tx[2] = channel_value & 0xFFU;
+		result = AD4130_Write(
+				adc_device_id,
+				(uint8_t) (AD4130_CHANNEL_0+i),
+				tx,
+				3U
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			return result;
+		}
+	}
+
+	setup = (channel_values[channel] >> 20) & 0x07U;
+	tx[0] = (offset_default >> 16) & 0xFFU;
+	tx[1] = (offset_default >> 8) & 0xFFU;
+	tx[2] = offset_default & 0xFFU;
+	result = AD4130_Write(
+			adc_device_id,
+			(uint8_t) (AD4130_OFFSET_0+setup),
+			tx,
+			3U
+	);
+	if (result == ERROR_CODE_NONE)
+	{
+		result = AD4130_Run_Calibration(adc_device_id, 0b0110U);
+	}
+	if (result == ERROR_CODE_NONE)
+	{
+		result = AD4130_Run_Calibration(adc_device_id, 0b0101U);
+	}
+	if (result == ERROR_CODE_NONE)
+	{
+		result = AD4130_Read_24_Bit(
+				adc_device_id,
+				(uint8_t) (AD4130_GAIN_0+setup),
+				&calibrated_gain
+		);
+	}
+	if (result == ERROR_CODE_NONE)
+	{
+		result = AD4130_Read_24_Bit(
+				adc_device_id,
+				(uint8_t) (AD4130_OFFSET_0+setup),
+				&calibrated_offset
+		);
+	}
+
+	for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
+	{
+		tx[0] = (channel_values[i] >> 16) & 0xFFU;
+		tx[1] = (channel_values[i] >> 8) & 0xFFU;
+		tx[2] = channel_values[i] & 0xFFU;
+		restore_result = AD4130_Write(
+				adc_device_id,
+				(uint8_t) (AD4130_CHANNEL_0+i),
+				tx,
+				3U
+		);
+		if ((result == ERROR_CODE_NONE) && (restore_result != ERROR_CODE_NONE))
+		{
+			result = restore_result;
+		}
+	}
+
+	if (result == ERROR_CODE_NONE)
+	{
+		*setup_pointer = setup;
+		*gain_value = calibrated_gain;
+		*offset_value = calibrated_offset;
+	}
+
+	return result;
+}
+
 void AD4130_Synchronize(void)
 {
 	HAL_GPIO_WritePin(AD4130_SYNC_GPIO_Port, AD4130_SYNC_Pin, GPIO_PIN_RESET);
@@ -453,7 +653,7 @@ ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode)
 	}
 
 	/* Bits 5-2: MODE */
-	control_value &= 0xFFC3U;
+	control_value &= 0b1111111111000011U;
 	control_value |= (uint16_t) mode << 2;
 
 	tx[0] = (control_value >> 8) & 0xFFU;
@@ -636,7 +836,7 @@ ErrorCode_t AD4130_Init(
 
 	/* Bits 13,10,9,8 */
 	/* INT_REF_VAL,DATA_STATUS,CSB_EN,INT_REF_EN */
-	control_val = 0b0010011100000000;
+	control_val = 0b0010011100010000;
 
 	tx[0] = (control_val >> 8) & 0xFFU;
 	tx[1] = control_val & 0xFFU;
@@ -699,30 +899,17 @@ ErrorCode_t AD4130_Init(
 static ErrorCode_t AD4130_Config(uint8_t adc_device_id)
 {
 	ErrorCode_t result;
-	uint16_t config_val;
 	uint16_t config_val_common;
-	uint8_t config_val_iout[8];
 	uint8_t tx[2] = {0};
 
 	/* Bits 12-10,7,6,5-4,3-1 */
 	/* I_OUT0_n,REF_BUFP_n,REF_BUFM_n,REF_SEL_n,PGA_n */
 	config_val_common = 0b0000000011101110;
 
-	config_val_iout[0] = 0b0000;  /* Off */
-	config_val_iout[1] = 0b0111;  /* 100 nA */
-	config_val_iout[2] = 0b0001;  /* 10 μA */
-	config_val_iout[3] = 0b0010;  /* 20 μA */
-	config_val_iout[4] = 0b0011;  /* 50 μA */
-	config_val_iout[5] = 0b0100;  /* 100 μA */
-	config_val_iout[6] = 0b0101;  /* 150 μA */
-	config_val_iout[7] = 0b0110;  /* 200 μA */
-
 	for (uint8_t i = 0; i < 8U; i++)
 	{
-		config_val = config_val_common | ((uint16_t) config_val_iout[i] << 10);
-
-		tx[0] = (config_val >> 8) & 0xFFU;
-		tx[1] = config_val & 0xFFU;
+		tx[0] = (config_val_common >> 8) & 0xFFU;
+		tx[1] = config_val_common & 0xFFU;
 		result = AD4130_Write(adc_device_id, (uint8_t) (AD4130_CONFIG_0+i), tx, 2U);
 		if (result != ERROR_CODE_NONE)
 		{
@@ -731,6 +918,50 @@ static ErrorCode_t AD4130_Config(uint8_t adc_device_id)
 	}
 
 	return ERROR_CODE_NONE;
+}
+
+static ErrorCode_t AD4130_Set_IOUT_Level(
+		uint8_t adc_device_id,
+		uint8_t setup,
+		uint8_t iout_level
+)
+{
+	ErrorCode_t result;
+	uint16_t config_value;
+	uint8_t tx[2] = {0};
+
+	if (setup > 7U)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+	if (iout_level > 7U)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_IOUT;
+	}
+
+	result = AD4130_Read_16_Bit(
+			adc_device_id,
+			(uint8_t) (AD4130_CONFIG_0+setup),
+			&config_value
+	);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	/* Bits 12-10: I_OUT0_n */
+	config_value &= 0b1110001111111111;
+	config_value |= (uint16_t) ad4130_iout_config_values[iout_level] << 10;
+
+	tx[0] = (config_value >> 8) & 0xFFU;
+	tx[1] = config_value & 0xFFU;
+
+	return AD4130_Write(
+			adc_device_id,
+			(uint8_t) (AD4130_CONFIG_0+setup),
+			tx,
+			2U
+	);
 }
 
 static ErrorCode_t AD4130_Filter(uint8_t adc_device_id)
@@ -774,16 +1005,19 @@ ErrorCode_t AD4130_Channel_0(uint8_t adc_device_id, uint8_t iout_level)
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_0,SETUP_0,AINP_0(AIN0),AINM_0(AIN1),I_OUT0_CH_0(AIN6) */
-	channel_0_val = (
-			0b100000000000000100000110
-			| ((uint32_t) iout_level << 20)
-	);
+	channel_0_val = 0b100000000000000100000110;
 
 	tx[0] = (channel_0_val >> 16) & 0xFFU;
 	tx[1] = (channel_0_val >> 8) & 0xFFU;
 	tx[2] = channel_0_val & 0xFFU;
 
 	result = AD4130_Write(adc_device_id, AD4130_CHANNEL_0, tx, 3U);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	result = AD4130_Set_IOUT_Level(adc_device_id, 0U, iout_level);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
@@ -808,16 +1042,19 @@ ErrorCode_t AD4130_Channel_1(uint8_t adc_device_id, uint8_t iout_level)
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_1,SETUP_1,AINP_1(AIN8),AINM_1(AIN9),I_OUT0_CH_1(AIN7) */
-	channel_1_val = (
-			0b100000010000100100000111
-			| ((uint32_t) iout_level << 20)
-	);
+	channel_1_val = 0b100100010000100100000111;
 
 	tx[0] = (channel_1_val >> 16) & 0xFFU;
 	tx[1] = (channel_1_val >> 8) & 0xFFU;
 	tx[2] = channel_1_val & 0xFFU;
 
 	result = AD4130_Write(adc_device_id, AD4130_CHANNEL_1, tx, 3U);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	result = AD4130_Set_IOUT_Level(adc_device_id, 1U, iout_level);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
@@ -842,16 +1079,19 @@ ErrorCode_t AD4130_Channel_2(uint8_t adc_device_id, uint8_t iout_level)
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_2,SETUP_2,AINP_2(AIN11),AINM_2(AIN12),I_OUT0_CH_2(AIN10) */
-	channel_2_val = (
-			0b100000010110110000001010
-			| ((uint32_t) iout_level << 20)
-	);
+	channel_2_val = 0b101000010110110000001010;
 
 	tx[0] = (channel_2_val >> 16) & 0xFFU;
 	tx[1] = (channel_2_val >> 8) & 0xFFU;
 	tx[2] = channel_2_val & 0xFFU;
 
 	result = AD4130_Write(adc_device_id, AD4130_CHANNEL_2, tx, 3U);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	result = AD4130_Set_IOUT_Level(adc_device_id, 2U, iout_level);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
@@ -876,16 +1116,19 @@ ErrorCode_t AD4130_Channel_3(uint8_t adc_device_id, uint8_t iout_level)
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_3,SETUP_3,AINP_3(AIN14),AINM_3(AIN15),I_OUT0_CH_3(AIN13) */
-	channel_3_val = (
-			0b100000011100111100001101
-			| ((uint32_t) iout_level << 20)
-	);
+	channel_3_val = 0b101100011100111100001101;
 
 	tx[0] = (channel_3_val >> 16) & 0xFFU;
 	tx[1] = (channel_3_val >> 8) & 0xFFU;
 	tx[2] = channel_3_val & 0xFFU;
 
 	result = AD4130_Write(adc_device_id, AD4130_CHANNEL_3, tx, 3U);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	result = AD4130_Set_IOUT_Level(adc_device_id, 3U, iout_level);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;

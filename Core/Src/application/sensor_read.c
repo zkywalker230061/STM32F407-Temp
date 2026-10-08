@@ -46,7 +46,7 @@ static ErrorCode_t recover_synchronized_fifo(
 	ErrorCode_t result;
 
 	printf(
-			"%d: ADC %u FIFO error, synchronized sequence discarded\r\n",
+			"%d: ADC %u synchronized sequence discarded\r\n",
 			(int) error,
 			(unsigned int) error_adc_device_id
 	);
@@ -82,12 +82,13 @@ static ErrorCode_t recover_synchronized_fifo(
 		}
 	}
 
-	return ERROR_CODE_MEASUREMENT_NOT_READY;
+	return ERROR_CODE_NONE;
 }
 
 static ErrorCode_t read_sensor_sync(void)
 {
 	ErrorCode_t result;
+	ErrorCode_t recovery_result;
 	ErrorCode_t fit_result;
 	ErrorCode_t sample_results[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
 	uint8_t channels[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
@@ -111,22 +112,20 @@ static ErrorCode_t read_sensor_sync(void)
 		result = AD4130_FIFO_Ready(adc_device_id, &fifo_ready);
 		if (result != ERROR_CODE_NONE)
 		{
+			recovery_result = recover_synchronized_fifo(adc_device_id, result);
+			if (recovery_result != ERROR_CODE_NONE)
+			{
+				return recovery_result;
+			}
+
 			if (
 					(result == ERROR_CODE_AD4130_FIFO_WRITE)
 					|| (result == ERROR_CODE_AD4130_FIFO_READ)
 					|| (result == ERROR_CODE_AD4130_FIFO_OVERRUN)
 			)
 			{
-				return recover_synchronized_fifo(adc_device_id, result);
+				return ERROR_CODE_MEASUREMENT_NOT_READY;
 			}
-
-			printf(
-					"%d: ADC %u FIFO status error\r\n",
-					(int) result,
-					(unsigned int) adc_device_id
-			);
-			vMBRegInputSetADCError(adc_device_id-1U);
-			synchronized_conversion_active = 0U;
 
 			return result;
 		}
@@ -147,22 +146,20 @@ static ErrorCode_t read_sensor_sync(void)
 		);
 		if (result != ERROR_CODE_NONE)
 		{
+			recovery_result = recover_synchronized_fifo(adc_device_id, result);
+			if (recovery_result != ERROR_CODE_NONE)
+			{
+				return recovery_result;
+			}
+
 			if (
 					(result == ERROR_CODE_AD4130_FIFO_WRITE)
 					|| (result == ERROR_CODE_AD4130_FIFO_READ)
 					|| (result == ERROR_CODE_AD4130_FIFO_OVERRUN)
 			)
 			{
-				return recover_synchronized_fifo(adc_device_id, result);
+				return ERROR_CODE_MEASUREMENT_NOT_READY;
 			}
-
-			printf(
-					"%d: ADC %u FIFO read error\r\n",
-					(int) result,
-					(unsigned int) adc_device_id
-			);
-			vMBRegInputSetADCError(adc_device_id-1U);
-			synchronized_conversion_active = 0U;
 
 			return result;
 		}

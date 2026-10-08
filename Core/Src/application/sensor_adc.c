@@ -61,6 +61,9 @@ static ErrorCode_t initialize_once(void)
 {
 	ErrorCode_t result;
 	AD4130InitResult_t init_result[AD4130_DEVICE_COUNT] = {0};
+	uint32_t gain_value;
+	uint32_t offset_value;
+	uint8_t setup;
 	uint8_t por_detected = 0U;
 
 	for (
@@ -113,10 +116,10 @@ static ErrorCode_t initialize_once(void)
 			);
 			return ERROR_CODE_AD4130_ID_MISMATCH;
 		}
-		/* ADC_CONTROL:		0x2700 - 0010 0111 0000 0000 */
+		/* ADC_CONTROL:		0x2710 - 0010 0111 0001 0000 */
 		/* IO_CONTROL:		0x0000 - 0000 0000 0000 0000 */
 		/* VBIAS_CONTROL:	0x0000 - 0000 0000 0000 0000 */
-		/* ERROR_EN:		0x0078 - 0000 0000 0111 1000 */
+		/* ERROR_EN:		0x007B - 0000 0000 0111 1011 */
 	}
 
 	HAL_Delay(500);
@@ -170,6 +173,57 @@ static ErrorCode_t initialize_once(void)
 //			);
 //			return result;
 //		}
+
+		for (uint8_t channel = 0U; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
+		{
+			result = AD4130_Internal_Calibrate(
+					adc_device_id,
+					channel,
+					&setup,
+					&gain_value,
+					&offset_value
+			);
+			if (result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: ADC %u CHANNEL_%u internal calibration error\r\n",
+						(int) result,
+						(unsigned int) adc_device_id,
+						(unsigned int) channel
+				);
+				return result;
+			}
+
+			printf(
+					"ADC %u SETUP_%u internal calibration completed: "
+					"GAIN=0x%06lX, OFFSET=0x%06lX\r\n",
+					(unsigned int) adc_device_id,
+					(unsigned int) setup,
+					(unsigned long) gain_value,
+					(unsigned long) offset_value
+			);
+		}
+	}
+
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
+	{
+		result = AD4130_Set_Conversion_Mode(
+				adc_device_id,
+				AD4130_CONVERSION_MODE_NORMAL
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			printf(
+					"%d: ADC %u conversion mode setup error\r\n",
+					(int) result,
+					(unsigned int) adc_device_id
+			);
+			return result;
+		}
 	}
 
 	HAL_Delay(500);
