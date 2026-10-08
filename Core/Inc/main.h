@@ -65,6 +65,10 @@ void Error_Handler(void);
 #define SPI3_CS1_GPIO_Port GPIOD
 #define SPI3_CS2_Pin GPIO_PIN_1
 #define SPI3_CS2_GPIO_Port GPIOD
+#define SPI3_CS3_Pin GPIO_PIN_2
+#define SPI3_CS3_GPIO_Port GPIOD
+#define SPI3_CS4_Pin GPIO_PIN_3
+#define SPI3_CS4_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 
