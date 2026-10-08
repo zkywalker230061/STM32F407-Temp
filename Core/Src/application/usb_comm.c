@@ -43,7 +43,7 @@ ErrorCode_t usb_comm_process(void)
 	if (receive_error != ERROR_CODE_NONE)
 	{
 		usb_cdc_receive_error = ERROR_CODE_NONE;
-		printf("%d: USB CDC receive error\r\n", (int)receive_error);
+		printf("%d: USB CDC receive error\r\n", (int) receive_error);
 		return receive_error;
 	}
 
@@ -101,7 +101,7 @@ ErrorCode_t usb_comm_process(void)
 			{
 				printf(
 						"%d: Sensor coefficients storage erase error\r\n",
-						(int)storage_result
+						(int) storage_result
 				);
 				return storage_result;
 			}
@@ -121,7 +121,7 @@ ErrorCode_t usb_comm_process(void)
 			{
 				printf(
 						"%d: Modbus RTU mode selection error\r\n",
-						(int)command_result
+						(int) command_result
 				);
 				return command_result;
 			}
@@ -139,7 +139,7 @@ ErrorCode_t usb_comm_process(void)
 			{
 				printf(
 						"%d: Modbus TCP mode selection error\r\n",
-						(int)command_result
+						(int) command_result
 				);
 				return command_result;
 			}
@@ -157,7 +157,7 @@ ErrorCode_t usb_comm_process(void)
 			{
 				printf(
 						"%d: PROFIBUS mode selection error\r\n",
-						(int)command_result
+						(int) command_result
 				);
 				return command_result;
 			}
@@ -191,7 +191,7 @@ ErrorCode_t usb_comm_process(void)
 			{
 				printf(
 						"%d: Synchronized measurement enable error\r\n",
-						(int)command_result
+						(int) command_result
 				);
 				return command_result;
 			}
@@ -207,7 +207,7 @@ ErrorCode_t usb_comm_process(void)
 			{
 				printf(
 						"%d: Synchronized measurement disable error\r\n",
-						(int)command_result
+						(int) command_result
 				);
 				return command_result;
 			}
@@ -226,7 +226,7 @@ ErrorCode_t usb_comm_process(void)
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			printf(
 					"%d: USB communication command error\r\n",
-					(int)ERROR_CODE_USB_COMM_ILLEGAL_COMMAND
+					(int) ERROR_CODE_USB_COMM_ILLEGAL_COMMAND
 			);
 			return ERROR_CODE_USB_COMM_ILLEGAL_COMMAND;
 		}
@@ -287,10 +287,7 @@ ErrorCode_t usb_comm_process(void)
 		}
 	}
 
-	transmit_result = USB_CDC_Transmit(
-			usb_comm_tx_batch,
-			batch_length
-	);
+	transmit_result = USB_CDC_Transmit(usb_comm_tx_batch, batch_length);
 	if (transmit_result != ERROR_CODE_NONE)
 	{
 		if (
@@ -300,7 +297,7 @@ ErrorCode_t usb_comm_process(void)
 		{
 			return command_result;
 		}
-		printf("%d: USB CDC transmit error\r\n", (int)transmit_result);
+		printf("%d: USB CDC transmit error\r\n", (int) transmit_result);
 		return transmit_result;
 	}
 	usb_comm_tx_transmitting = 1U;
@@ -309,10 +306,7 @@ ErrorCode_t usb_comm_process(void)
 	return ERROR_CODE_NONE;
 }
 
-ErrorCode_t usb_comm_write(
-		const uint8_t *data,
-		uint16_t length
-)
+ErrorCode_t usb_comm_write(const uint8_t *data, uint16_t length)
 {
 	if (data == NULL)
 	{

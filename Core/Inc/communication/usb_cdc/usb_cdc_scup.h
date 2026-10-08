@@ -10,10 +10,7 @@
 extern "C" {
 #endif
 
-ErrorCode_t USB_CDC_SCUP_Receive(
-		const uint8_t *data,
-		uint32_t length
-);
+ErrorCode_t USB_CDC_SCUP_Receive(const uint8_t *data, uint32_t length);
 
 ErrorCode_t USB_CDC_SCUP_Get_Data(
 		uint8_t *adc_device_id,

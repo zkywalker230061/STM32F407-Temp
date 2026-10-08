@@ -33,7 +33,7 @@ ErrorCode_t communication_select_initialize(void)
 	{
 		printf(
 				"%d: Industrial communication initialize error\r\n",
-				(int)result
+				(int) result
 		);
 		return result;
 	}
@@ -85,7 +85,7 @@ ErrorCode_t communication_select_mode(SystemCommunicationMode_t mode)
 		{
 			printf(
 					"%d: Industrial communication restore error\r\n",
-					(int)restore_result
+					(int) restore_result
 			);
 		}
 		return result;
@@ -125,7 +125,7 @@ ErrorCode_t communication_select_process(void)
 	{
 		printf(
 			"%d: Industrial communication process error\r\n",
-			(int)result
+			(int) result
 		);
 		return result;
 	}

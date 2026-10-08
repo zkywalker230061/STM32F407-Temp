@@ -12,10 +12,7 @@ extern "C" {
 
 ErrorCode_t usb_comm_process(void);
 
-ErrorCode_t usb_comm_write(
-		const uint8_t *data,
-		uint16_t length
-);
+ErrorCode_t usb_comm_write(const uint8_t *data, uint16_t length);
 
 #ifdef __cplusplus
 }

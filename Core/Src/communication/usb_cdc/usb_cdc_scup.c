@@ -6,8 +6,10 @@
 #include "storage/sensor_coeffs_format.h"
 
 
-#define USB_CDC_SCUP_HEADER_SIZE		12U
-#define USB_CDC_SCUP_FRAME_MAX_SIZE	360U
+#define USB_CDC_SCUP_HEADER_SIZE	12U
+#define USB_CDC_SCUP_FRAME_MAX_SIZE	( \
+		USB_CDC_SCUP_HEADER_SIZE + SENSOR_COEFFS_BINARY_MAX_SIZE \
+)
 
 #define USB_CDC_SCUP_RECEIVING		0U
 #define USB_CDC_SCUP_READY			1U
@@ -23,17 +25,14 @@ static volatile ErrorCode_t usb_cdc_scup_error;
 static uint32_t USB_CDC_SCUP_Read_32_Bit(const uint8_t *data)
 {
 	return (
-			(uint32_t)data[0]
-			| ((uint32_t)data[1] << 8)
-			| ((uint32_t)data[2] << 16)
-			| ((uint32_t)data[3] << 24)
+			(uint32_t) data[0]
+			| ((uint32_t) data[1] << 8)
+			| ((uint32_t) data[2] << 16)
+			| ((uint32_t) data[3] << 24)
 	);
 }
 
-ErrorCode_t USB_CDC_SCUP_Receive(
-		const uint8_t *data,
-		uint32_t length
-)
+ErrorCode_t USB_CDC_SCUP_Receive(const uint8_t *data, uint32_t length)
 {
 	uint32_t remaining_length;
 	uint32_t expected_length;

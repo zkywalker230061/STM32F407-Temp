@@ -180,10 +180,7 @@ static ErrorCode_t AD4130_Convert_Resistance(
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
 	}
 
-	voltage = (
-		(float)data / 16777216.0f
-		* AD4130_VREF / AD4130_GAIN
-	);
+	voltage = (float) data / 16777216.0f * AD4130_VREF / AD4130_GAIN;
 
 	*resistance = voltage / iout;
 

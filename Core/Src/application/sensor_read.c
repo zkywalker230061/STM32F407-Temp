@@ -47,8 +47,8 @@ static ErrorCode_t recover_synchronized_fifo(
 
 	printf(
 			"%d: ADC %u FIFO error, synchronized sequence discarded\r\n",
-			(int)error,
-			(unsigned int)error_adc_device_id
+			(int) error,
+			(unsigned int) error_adc_device_id
 	);
 
 	for (uint8_t adc_index = 0U; adc_index < AD4130_DEVICE_COUNT; adc_index++)
@@ -75,8 +75,8 @@ static ErrorCode_t recover_synchronized_fifo(
 		{
 			printf(
 					"%d: ADC %u FIFO recovery error\r\n",
-					(int)result,
-					(unsigned int)adc_device_id
+					(int) result,
+					(unsigned int) adc_device_id
 			);
 			return result;
 		}
@@ -122,8 +122,8 @@ static ErrorCode_t read_sensor_sync(void)
 
 			printf(
 					"%d: ADC %u FIFO status error\r\n",
-					(int)result,
-					(unsigned int)adc_device_id
+					(int) result,
+					(unsigned int) adc_device_id
 			);
 			vMBRegInputSetADCError(adc_device_id-1U);
 			synchronized_conversion_active = 0U;
@@ -158,8 +158,8 @@ static ErrorCode_t read_sensor_sync(void)
 
 			printf(
 					"%d: ADC %u FIFO read error\r\n",
-					(int)result,
-					(unsigned int)adc_device_id
+					(int) result,
+					(unsigned int) adc_device_id
 			);
 			vMBRegInputSetADCError(adc_device_id-1U);
 			synchronized_conversion_active = 0U;
@@ -190,9 +190,9 @@ static ErrorCode_t read_sensor_sync(void)
 				{
 					printf(
 							"%d: ADC %u CHANNEL_%u read error\r\n",
-							(int)result,
-							(unsigned int)adc_device_id,
-							(unsigned int)channel
+							(int) result,
+							(unsigned int) adc_device_id,
+							(unsigned int) channel
 					);
 					vMBRegInputSetChannelError(adc_device_id-1U, channel);
 				}
@@ -200,8 +200,8 @@ static ErrorCode_t read_sensor_sync(void)
 				{
 					printf(
 							"%d: ADC %u read error\r\n",
-							(int)result,
-							(unsigned int)adc_device_id
+							(int) result,
+							(unsigned int) adc_device_id
 					);
 					vMBRegInputSetADCError(adc_device_id-1U);
 				}
@@ -230,9 +230,9 @@ static ErrorCode_t read_sensor_sync(void)
 			{
 				printf(
 						"%d: ADC %u CHANNEL_%u fit error\r\n",
-						(int)fit_result,
-						(unsigned int)adc_device_id,
-						(unsigned int)channel
+						(int) fit_result,
+						(unsigned int) adc_device_id,
+						(unsigned int) channel
 				);
 				vMBRegInputSetChannelError(adc_device_id-1U, channel);
 				if (fit_result == ERROR_CODE_SENSOR_FIT_ILLEGAL_PARAM)
@@ -259,10 +259,10 @@ static ErrorCode_t read_sensor_sync(void)
 			{
 				printf(
 						"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
-						(unsigned int)adc_device_id,
-						(unsigned int)(channel+1U),
-						(double)resistance[adc_device_id - 1U][channel],
-						(double)temperature[adc_device_id - 1U][channel]
+						(unsigned int) adc_device_id,
+						(unsigned int) (channel+1U),
+						(double) resistance[adc_device_id - 1U][channel],
+						(double) temperature[adc_device_id - 1U][channel]
 				);
 			}
 		}
@@ -310,9 +310,9 @@ static ErrorCode_t read_sensor_normal(void)
 			{
 				printf(
 						"%d: ADC %u CHANNEL_%u read error\r\n",
-						(int)result,
-						(unsigned int)adc_device_id,
-						(unsigned int)channel
+						(int) result,
+						(unsigned int) adc_device_id,
+						(unsigned int) channel
 				);
 				vMBRegInputSetChannelError(adc_device_id-1U, channel);
 			}
@@ -320,8 +320,8 @@ static ErrorCode_t read_sensor_normal(void)
 			{
 				printf(
 						"%d: ADC %u read error\r\n",
-						(int)result,
-						(unsigned int)adc_device_id
+						(int) result,
+						(unsigned int) adc_device_id
 				);
 				vMBRegInputSetADCError(adc_device_id-1U);
 			}
@@ -350,9 +350,9 @@ static ErrorCode_t read_sensor_normal(void)
 		{
 			printf(
 					"%d: ADC %u CHANNEL_%u fit error\r\n",
-					(int)fit_result,
-					(unsigned int)adc_device_id,
-					(unsigned int)channel
+					(int) fit_result,
+					(unsigned int) adc_device_id,
+					(unsigned int) channel
 			);
 			vMBRegInputSetChannelError(adc_device_id-1U, channel);
 			if (fit_result == ERROR_CODE_SENSOR_FIT_ILLEGAL_PARAM)
@@ -379,10 +379,10 @@ static ErrorCode_t read_sensor_normal(void)
 		{
 			printf(
 					"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
-					(unsigned int)adc_device_id,
-					(unsigned int)(channel+1U),
-					(double)resistance[adc_device_id - 1U][channel],
-					(double)temperature[adc_device_id - 1U][channel]
+					(unsigned int) adc_device_id,
+					(unsigned int) (channel+1U),
+					(double) resistance[adc_device_id - 1U][channel],
+					(double) temperature[adc_device_id - 1U][channel]
 			);
 		}
 	}

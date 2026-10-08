@@ -31,15 +31,9 @@ extern volatile ErrorCode_t usb_cdc_receive_error;
 
 void USB_CDC_Initialize(void);
 
-ErrorCode_t USB_CDC_Receive(
-		const uint8_t *data,
-		uint32_t length
-);
+ErrorCode_t USB_CDC_Receive(const uint8_t *data, uint32_t length);
 
-ErrorCode_t USB_CDC_Transmit(
-		const uint8_t *data,
-		uint16_t length
-);
+ErrorCode_t USB_CDC_Transmit(const uint8_t *data, uint16_t length);
 
 uint8_t USB_CDC_Transmit_Ready(void);
 

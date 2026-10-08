@@ -158,19 +158,10 @@ ErrorCode_t AD4130_Write(
 );
 ErrorCode_t AD4130_Reset(uint8_t adc_device_id);
 void AD4130_Synchronize(void);
-ErrorCode_t AD4130_Set_Conversion_Mode(
-		uint8_t adc_device_id,
-		uint8_t mode
-);
-ErrorCode_t AD4130_FIFO_Enable(
-		uint8_t adc_device_id,
-		uint8_t watermark
-);
+ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode);
+ErrorCode_t AD4130_FIFO_Enable(uint8_t adc_device_id, uint8_t watermark);
 ErrorCode_t AD4130_FIFO_Disable(uint8_t adc_device_id);
-ErrorCode_t AD4130_FIFO_Ready(
-		uint8_t adc_device_id,
-		uint8_t *ready
-);
+ErrorCode_t AD4130_FIFO_Ready(uint8_t adc_device_id, uint8_t *ready);
 ErrorCode_t AD4130_FIFO_Read(
 		uint8_t adc_device_id,
 		AD4130FIFOSample_t *samples,
@@ -183,8 +174,6 @@ ErrorCode_t AD4130_Init(
 		uint8_t adc_device_id,
 		AD4130InitResult_t *init_result
 );
-ErrorCode_t AD4130_Config(uint8_t adc_device_id);
-ErrorCode_t AD4130_Filter(uint8_t adc_device_id);
 ErrorCode_t AD4130_Check_Status_Error(
 		uint8_t adc_device_id,
 		uint8_t status
@@ -192,22 +181,10 @@ ErrorCode_t AD4130_Check_Status_Error(
 
 /* ------------------------------------------------------------------------ */
 
-ErrorCode_t AD4130_Channel_0(
-		uint8_t adc_device_id,
-		uint8_t iout_level
-);
-ErrorCode_t AD4130_Channel_1(
-		uint8_t adc_device_id,
-		uint8_t iout_level
-);
-ErrorCode_t AD4130_Channel_2(
-		uint8_t adc_device_id,
-		uint8_t iout_level
-);
-ErrorCode_t AD4130_Channel_3(
-		uint8_t adc_device_id,
-		uint8_t iout_level
-);
+ErrorCode_t AD4130_Channel_0(uint8_t adc_device_id, uint8_t iout_level);
+ErrorCode_t AD4130_Channel_1(uint8_t adc_device_id, uint8_t iout_level);
+ErrorCode_t AD4130_Channel_2(uint8_t adc_device_id, uint8_t iout_level);
+ErrorCode_t AD4130_Channel_3(uint8_t adc_device_id, uint8_t iout_level);
 
 /* ------------------------------------------------------------------------ */
 

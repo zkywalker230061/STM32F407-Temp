@@ -7,19 +7,16 @@
 
 static uint16_t Sensor_Coeffs_Read_16_Bit(const uint8_t *data)
 {
-	return (
-			(uint16_t)data[0]
-			| ((uint16_t)data[1] << 8)
-	);
+	return ((uint16_t) data[0] | ((uint16_t) data[1] << 8));
 }
 
 static uint32_t Sensor_Coeffs_Read_32_Bit(const uint8_t *data)
 {
 	return (
-			(uint32_t)data[0]
-			| ((uint32_t)data[1] << 8)
-			| ((uint32_t)data[2] << 16)
-			| ((uint32_t)data[3] << 24)
+			(uint32_t) data[0]
+			| ((uint32_t) data[1] << 8)
+			| ((uint32_t) data[2] << 16)
+			| ((uint32_t) data[3] << 24)
 	);
 }
 
@@ -172,9 +169,7 @@ ErrorCode_t Sensor_Coeffs_Decode(
 			return ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT;
 		}
 
-		coefficient_size = (
-				(order + 1U) * SENSOR_COEFFS_FORMAT_FLOAT_SIZE
-		);
+		coefficient_size = (order + 1U) * SENSOR_COEFFS_FORMAT_FLOAT_SIZE;
 		if (
 				Sensor_Coeffs_Check_Length(
 						data_length, read_position, coefficient_size
@@ -192,7 +187,7 @@ ErrorCode_t Sensor_Coeffs_Decode(
 			read_position += SENSOR_COEFFS_FORMAT_FLOAT_SIZE;
 		}
 
-		segment->order = (int)order;
+		segment->order = (int) order;
 	}
 
 	if (read_position != data_length)

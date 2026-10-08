@@ -53,9 +53,9 @@ ErrorCode_t sensor_coeffs_initialize(void)
 			{
 				printf(
 						"%d: ADC %u CHANNEL_%u storage load error\r\n",
-						(int)storage_result,
-						(unsigned int)adc_device_id,
-						(unsigned int)channel
+						(int) storage_result,
+						(unsigned int) adc_device_id,
+						(unsigned int) channel
 				);
 				result = storage_result;
 				continue;
@@ -71,9 +71,9 @@ ErrorCode_t sensor_coeffs_initialize(void)
 			{
 				printf(
 						"%d: ADC %u CHANNEL_%u decode error\r\n",
-						(int)decode_result,
-						(unsigned int)adc_device_id,
-						(unsigned int)channel
+						(int) decode_result,
+						(unsigned int) adc_device_id,
+						(unsigned int) channel
 				);
 				result = decode_result;
 				continue;
@@ -82,9 +82,9 @@ ErrorCode_t sensor_coeffs_initialize(void)
 			sensor_curve_valid[adc_device_id - 1U][channel] = 1U;
 			printf(
 					"ADC %u CHANNEL_%u: %u segments loaded\r\n",
-					(unsigned int)adc_device_id,
-					(unsigned int)channel,
-					(unsigned int)sensor_curves[adc_device_id - 1U][channel].segment_count
+					(unsigned int) adc_device_id,
+					(unsigned int) channel,
+					(unsigned int) sensor_curves[adc_device_id - 1U][channel].segment_count
 			);
 		}
 	}
@@ -118,7 +118,7 @@ ErrorCode_t sensor_coeffs_process(void)
 	{
 		printf(
 				"%d: Sensor coefficients transfer error\r\n",
-				(int)transfer_result
+				(int) transfer_result
 		);
 		USB_CDC_SCUP_Reset();
 		return transfer_result;
@@ -134,9 +134,9 @@ ErrorCode_t sensor_coeffs_process(void)
 	{
 		printf(
 				"%d: ADC %u CHANNEL_%u decode error\r\n",
-				(int)decode_result,
-				(unsigned int)adc_device_id,
-				(unsigned int)channel
+				(int) decode_result,
+				(unsigned int) adc_device_id,
+				(unsigned int) channel
 		);
 		USB_CDC_SCUP_Reset();
 		return decode_result;
@@ -170,9 +170,9 @@ ErrorCode_t sensor_coeffs_process(void)
 	{
 		printf(
 				"%d: ADC %u CHANNEL_%u storage save error\r\n",
-				(int)storage_result,
-				(unsigned int)adc_device_id,
-				(unsigned int)channel
+				(int) storage_result,
+				(unsigned int) adc_device_id,
+				(unsigned int) channel
 		);
 		USB_CDC_SCUP_Reset();
 		return storage_result;
@@ -182,9 +182,9 @@ ErrorCode_t sensor_coeffs_process(void)
 	sensor_curve_valid[adc_device_id - 1U][channel] = 1U;
 	printf(
 			"ADC %u CHANNEL_%u: %u segments saved\r\n",
-			(unsigned int)adc_device_id,
-			(unsigned int)channel,
-			(unsigned int)received_curve.segment_count
+			(unsigned int) adc_device_id,
+			(unsigned int) channel,
+			(unsigned int) received_curve.segment_count
 	);
 	USB_CDC_SCUP_Reset();
 
@@ -240,9 +240,9 @@ static ErrorCode_t sensor_coeffs_copy_flash_to_ram(void)
 			{
 				printf(
 						"%d: ADC %u CHANNEL_%u storage copy to RAM error\r\n",
-						(int)storage_result,
-						(unsigned int)adc_device_id,
-						(unsigned int)channel
+						(int) storage_result,
+						(unsigned int) adc_device_id,
+						(unsigned int) channel
 				);
 				return storage_result;
 			}
@@ -285,9 +285,9 @@ static ErrorCode_t sensor_coeffs_copy_ram_to_flash(void)
 			{
 				printf(
 						"%d: ADC %u CHANNEL_%u storage copy to FLASH error\r\n",
-						(int)storage_result,
-						(unsigned int)adc_device_id,
-						(unsigned int)channel
+						(int) storage_result,
+						(unsigned int) adc_device_id,
+						(unsigned int) channel
 				);
 				return storage_result;
 			}
@@ -315,7 +315,7 @@ static ErrorCode_t sensor_coeffs_compact_flash(void)
 	{
 		printf(
 				"%d: Sensor coefficients storage erase error\r\n",
-				(int)storage_result
+				(int) storage_result
 		);
 		return storage_result;
 	}

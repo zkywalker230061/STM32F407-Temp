@@ -6,11 +6,7 @@
 #include "application/usb_comm.h"
 
 
-int _write(
-		int file,
-		char *data,
-		int length
-)
+int _write(int file, char *data, int length)
 {
 	ErrorCode_t result;
 
@@ -21,7 +17,7 @@ int _write(
 		return 0;
 	}
 
-	result = usb_comm_write((const uint8_t *)data, (uint16_t)length);
+	result = usb_comm_write((const uint8_t *) data, (uint16_t) length);
 	if (
 			(result != ERROR_CODE_NONE)
 			&& (result != ERROR_CODE_USB_COMM_NOT_READY)

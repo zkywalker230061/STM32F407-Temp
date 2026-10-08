@@ -115,7 +115,7 @@ int main(void)
 
 	/* sensor_adc: ADC initialize */
 	adc_result = sensor_adc_initialize();
-	(void)usb_comm_process();
+	(void) usb_comm_process();
 	if (
 			(adc_result != ERROR_CODE_NONE)
 			&& (adc_result != ERROR_CODE_MEASUREMENT_STATUS_POR)
@@ -126,7 +126,7 @@ int main(void)
 
 	/* sensor_coeffs: load, decode */
 	coeffs_result = sensor_coeffs_initialize();
-	(void)usb_comm_process();
+	(void) usb_comm_process();
 	if (
 			(coeffs_result != ERROR_CODE_NONE)
 			&& (coeffs_result != ERROR_CODE_COEFFS_DECODE_ILLEGAL_FORMAT)
@@ -172,7 +172,7 @@ int main(void)
 		}
 
 		/* USB communication process */
-		(void)usb_comm_process();
+		(void) usb_comm_process();
 	}
 
   /* USER CODE END 3 */
@@ -238,7 +238,7 @@ void Error_Handler(void)
   /* User can add his own implementation to report the HAL error return state */
   /* __disable_irq(); */
 
-	printf("%d: fatal system error\r\n", (int)ERROR_CODE_SYSTEM_FATAL);
+	printf("%d: fatal system error\r\n", (int) ERROR_CODE_SYSTEM_FATAL);
 	for (uint8_t adc_index = 0U; adc_index < AD4130_DEVICE_COUNT; adc_index++)
 	{
 		vMBRegInputSetADCError(adc_index);
@@ -246,8 +246,8 @@ void Error_Handler(void)
 
   while (1)
   {
-		(void)usb_comm_process();
-		(void)communication_select_process();
+		(void) usb_comm_process();
+		(void) communication_select_process();
   }
   /* USER CODE END Error_Handler_Debug */
 }
@@ -266,7 +266,7 @@ void assert_failed(uint8_t *file, uint32_t line)
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
 	printf(
 		"Wrong parameters value: file %s on line %lu\r\n",
-		(char *)file, (unsigned long int)line
+		(char *) file, (unsigned long int) line
 	);
   /* USER CODE END 6 */
 }

@@ -48,10 +48,7 @@ void USB_CDC_Initialize(void)
 	usb_cdc_transmit_busy = 0U;
 }
 
-ErrorCode_t USB_CDC_Receive(
-		const uint8_t *data,
-		uint32_t length
-)
+ErrorCode_t USB_CDC_Receive(const uint8_t *data, uint32_t length)
 {
 	uint32_t data_index = 0U;
 	ErrorCode_t result;
@@ -349,10 +346,7 @@ static ErrorCode_t USB_CDC_Identify_Frame(void)
 	return ERROR_CODE_USB_CDC_ILLEGAL_FORMAT;
 }
 
-ErrorCode_t USB_CDC_Transmit(
-		const uint8_t *data,
-		uint16_t length
-)
+ErrorCode_t USB_CDC_Transmit(const uint8_t *data, uint16_t length)
 {
 	uint8_t result;
 
@@ -367,7 +361,7 @@ ErrorCode_t USB_CDC_Transmit(
 	}
 
 	usb_cdc_transmit_busy = 1U;
-	result = CDC_Transmit_FS((uint8_t *)data, length);
+	result = CDC_Transmit_FS((uint8_t *) data, length);
 	if (result == USBD_OK)
 	{
 		return ERROR_CODE_NONE;

@@ -136,16 +136,16 @@ ErrorCode_t system_config_set_synchronized_measurement_enabled(uint8_t enabled)
 			{
 				if (previous_mode == AD4130_CONVERSION_MODE_SYNC)
 				{
-					(void)AD4130_Set_Conversion_Mode(rollback_device_id, previous_mode);
-					(void)AD4130_FIFO_Enable(
+					(void) AD4130_Set_Conversion_Mode(rollback_device_id, previous_mode);
+					(void) AD4130_FIFO_Enable(
 							rollback_device_id,
 							AD4130_SENSOR_CHANNEL_COUNT
 					);
 				}
 				else
 				{
-					(void)AD4130_FIFO_Disable(rollback_device_id);
-					(void)AD4130_Set_Conversion_Mode(rollback_device_id, previous_mode);
+					(void) AD4130_FIFO_Disable(rollback_device_id);
+					(void) AD4130_Set_Conversion_Mode(rollback_device_id, previous_mode);
 				}
 			}
 

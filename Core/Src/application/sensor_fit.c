@@ -85,10 +85,7 @@ ErrorCode_t resistance_to_temperature(
 {
 	if (curve == NULL)
 	{
-		return resistance_to_temperature_from_inc(
-				resistance,
-				temperature
-		);
+		return resistance_to_temperature_from_inc(resistance, temperature);
 	}
 
 	return resistance_to_temperature_from_curve(

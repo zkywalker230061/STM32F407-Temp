@@ -5,11 +5,7 @@
 extern "C" {
 #endif
 
-int _write(
-		int file,
-		char *data,
-		int length
-);
+int _write(int file, char *data, int length);
 
 #ifdef __cplusplus
 }

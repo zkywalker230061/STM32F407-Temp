@@ -41,6 +41,9 @@ static const float ad4130_iout_values[8] = {
 
 AD4130Iouts_t ad4130_iouts[AD4130_DEVICE_COUNT] = {0};
 
+static ErrorCode_t AD4130_Config(uint8_t adc_device_id);
+static ErrorCode_t AD4130_Filter(uint8_t adc_device_id);
+
 
 /* ------------------------------------------------------------------------ */
 
@@ -156,10 +159,7 @@ static ErrorCode_t AD4130_Decode_FIFO_Status(
 	return ERROR_CODE_NONE;
 }
 
-ErrorCode_t AD4130_Check_Status_Error(
-		uint8_t adc_device_id,
-		uint8_t status
-)
+ErrorCode_t AD4130_Check_Status_Error(uint8_t adc_device_id, uint8_t status)
 {
 	ErrorCode_t result;
 	uint16_t error = 0U;
@@ -271,10 +271,7 @@ ErrorCode_t AD4130_Read_16_Bit(
 
 	if (status == HAL_OK)
 	{
-		*value = (
-			((uint16_t) rx[1] << 8)
-			| rx[2]
-		);
+		*value = (((uint16_t) rx[1] << 8) | rx[2]);
 	}
 	return AD4130_Convert_HAL_Status(status);
 }
@@ -435,10 +432,7 @@ void AD4130_Synchronize(void)
 	HAL_GPIO_WritePin(AD4130_SYNC_GPIO_Port, AD4130_SYNC_Pin, GPIO_PIN_SET);
 }
 
-ErrorCode_t AD4130_Set_Conversion_Mode(
-		uint8_t adc_device_id,
-		uint8_t mode
-)
+ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode)
 {
 	ErrorCode_t result;
 	uint16_t control_value;
@@ -460,7 +454,7 @@ ErrorCode_t AD4130_Set_Conversion_Mode(
 
 	/* Bits 5-2: MODE */
 	control_value &= 0xFFC3U;
-	control_value |= (uint16_t)mode << 2;
+	control_value |= (uint16_t) mode << 2;
 
 	tx[0] = (control_value >> 8) & 0xFFU;
 	tx[1] = control_value & 0xFFU;
@@ -468,10 +462,7 @@ ErrorCode_t AD4130_Set_Conversion_Mode(
 	return AD4130_Write(adc_device_id, AD4130_ADC_CONTROL, tx, 2U);
 }
 
-ErrorCode_t AD4130_FIFO_Enable(
-		uint8_t adc_device_id,
-		uint8_t watermark
-)
+ErrorCode_t AD4130_FIFO_Enable(uint8_t adc_device_id, uint8_t watermark)
 {
 	uint32_t fifo_control_value;
 	uint8_t tx[3] = {0};
@@ -481,8 +472,9 @@ ErrorCode_t AD4130_FIFO_Enable(
 		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
 	}
 
-	/* ADD_FIFO_HEADER, FIFO_MODE (watermark), WATERMARK_INT_EN, WATERMARK */
-	fifo_control_value = 0x050200U | watermark;
+	/* Bits 17-16 */
+	/* FIFO_MODE */
+	fifo_control_value = 0b000001010000001000000000 | watermark;
 
 	tx[0] = (fifo_control_value >> 16) & 0xFFU;
 	tx[1] = (fifo_control_value >> 8) & 0xFFU;
@@ -493,15 +485,21 @@ ErrorCode_t AD4130_FIFO_Enable(
 
 ErrorCode_t AD4130_FIFO_Disable(uint8_t adc_device_id)
 {
-	uint8_t tx[3] = {0x04U, 0x02U, 0x00U};
+	uint32_t fifo_control_value;
+	uint8_t tx[3] = {0};
+
+	/* Bits 17-16 */
+	/* FIFO_MODE */
+	fifo_control_value = 0b000001000000001000000000;
+
+	tx[0] = (fifo_control_value >> 16) & 0xFFU;
+	tx[1] = (fifo_control_value >> 8) & 0xFFU;
+	tx[2] = fifo_control_value & 0xFFU;
 
 	return AD4130_Write(adc_device_id, AD4130_FIFO_CONTROL, tx, 3U);
 }
 
-ErrorCode_t AD4130_FIFO_Ready(
-		uint8_t adc_device_id,
-		uint8_t *ready
-)
+ErrorCode_t AD4130_FIFO_Ready(uint8_t adc_device_id, uint8_t *ready)
 {
 	ErrorCode_t result;
 	uint8_t fifo_status;
@@ -570,7 +568,7 @@ ErrorCode_t AD4130_FIFO_Read(
 		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
 
-	tx[0] = 0x7DU;  /* FIFO read command */
+	tx[0] = 0x40U | AD4130_FIFO_DATA;  /* COMMS read, FIFO_DATA */
 	tx[1] = sample_count;
 	transfer_length = 2U + (4U * sample_count);
 
@@ -594,8 +592,8 @@ ErrorCode_t AD4130_FIFO_Read(
 		sample_position = 2U + (4U * i);
 		samples[i].header = rx[sample_position];
 		samples[i].data = (
-				((uint32_t)rx[sample_position+1U] << 16)
-				| ((uint32_t)rx[sample_position+2U] << 8)
+				((uint32_t) rx[sample_position+1U] << 16)
+				| ((uint32_t) rx[sample_position+2U] << 8)
 				| rx[sample_position+3U]
 		);
 		if (
@@ -648,9 +646,10 @@ ErrorCode_t AD4130_Init(
 		return result;
 	}
 
-	/* Bits 6,5,4,3 */
-	/* SPI_IGNORE_ERR_EN,SPI_SCLK_CNT_ERR_EN,SPI_READ_ERR_EN,SPI_WRITE_ERR_EN */
-	error_en_val = 0b0000000001111000;
+	/* Bits 6,5,4,3,1,0 */
+	/* SPI_IGNORE_ERR_EN,SPI_SCLK_CNT_ERR_EN,SPI_READ_ERR_EN,SPI_WRITE_ERR_EN, */
+	/* MM_CRC_ERR_EN,ROM_CRC_ERR_EN */
+	error_en_val = 0b0000000001111011;
 
 	tx[0] = (error_en_val >> 8) & 0xFFU;
 	tx[1] = error_en_val & 0xFFU;
@@ -697,7 +696,7 @@ ErrorCode_t AD4130_Init(
 	return AD4130_Check_Status_Error(adc_device_id, init_result->status);
 }
 
-ErrorCode_t AD4130_Config(uint8_t adc_device_id)
+static ErrorCode_t AD4130_Config(uint8_t adc_device_id)
 {
 	ErrorCode_t result;
 	uint16_t config_val;
@@ -720,11 +719,11 @@ ErrorCode_t AD4130_Config(uint8_t adc_device_id)
 
 	for (uint8_t i = 0; i < 8U; i++)
 	{
-		config_val = config_val_common | ((uint16_t)config_val_iout[i] << 10);
+		config_val = config_val_common | ((uint16_t) config_val_iout[i] << 10);
 
 		tx[0] = (config_val >> 8) & 0xFFU;
 		tx[1] = config_val & 0xFFU;
-		result = AD4130_Write(adc_device_id, (uint8_t)(AD4130_CONFIG_0+i), tx, 2U);
+		result = AD4130_Write(adc_device_id, (uint8_t) (AD4130_CONFIG_0+i), tx, 2U);
 		if (result != ERROR_CODE_NONE)
 		{
 			return result;
@@ -734,7 +733,7 @@ ErrorCode_t AD4130_Config(uint8_t adc_device_id)
 	return ERROR_CODE_NONE;
 }
 
-ErrorCode_t AD4130_Filter(uint8_t adc_device_id)
+static ErrorCode_t AD4130_Filter(uint8_t adc_device_id)
 {
 	ErrorCode_t result;
 	uint32_t filter_val;
@@ -750,7 +749,7 @@ ErrorCode_t AD4130_Filter(uint8_t adc_device_id)
 
 	for (uint8_t i = 0; i < 8U; i++)
 	{
-		result = AD4130_Write(adc_device_id, (uint8_t)(AD4130_FILTER_0+i), tx, 3U);
+		result = AD4130_Write(adc_device_id, (uint8_t) (AD4130_FILTER_0+i), tx, 3U);
 		if (result != ERROR_CODE_NONE)
 		{
 			return result;
@@ -762,10 +761,7 @@ ErrorCode_t AD4130_Filter(uint8_t adc_device_id)
 
 /* ------------------------------------------------------------------------ */
 
-ErrorCode_t AD4130_Channel_0(
-		uint8_t adc_device_id,
-		uint8_t iout_level
-)
+ErrorCode_t AD4130_Channel_0(uint8_t adc_device_id, uint8_t iout_level)
 {
 	if (iout_level > 7U)
 	{
@@ -780,7 +776,7 @@ ErrorCode_t AD4130_Channel_0(
 	/* ENABLE_0,SETUP_0,AINP_0(AIN0),AINM_0(AIN1),I_OUT0_CH_0(AIN6) */
 	channel_0_val = (
 			0b100000000000000100000110
-			| ((uint32_t)iout_level << 20)
+			| ((uint32_t) iout_level << 20)
 	);
 
 	tx[0] = (channel_0_val >> 16) & 0xFFU;
@@ -799,10 +795,7 @@ ErrorCode_t AD4130_Channel_0(
 	return result;
 }
 
-ErrorCode_t AD4130_Channel_1(
-		uint8_t adc_device_id,
-		uint8_t iout_level
-)
+ErrorCode_t AD4130_Channel_1(uint8_t adc_device_id, uint8_t iout_level)
 {
 	if (iout_level > 7U)
 	{
@@ -817,7 +810,7 @@ ErrorCode_t AD4130_Channel_1(
 	/* ENABLE_1,SETUP_1,AINP_1(AIN8),AINM_1(AIN9),I_OUT0_CH_1(AIN7) */
 	channel_1_val = (
 			0b100000010000100100000111
-			| ((uint32_t)iout_level << 20)
+			| ((uint32_t) iout_level << 20)
 	);
 
 	tx[0] = (channel_1_val >> 16) & 0xFFU;
@@ -836,10 +829,7 @@ ErrorCode_t AD4130_Channel_1(
 	return result;
 }
 
-ErrorCode_t AD4130_Channel_2(
-		uint8_t adc_device_id,
-		uint8_t iout_level
-)
+ErrorCode_t AD4130_Channel_2(uint8_t adc_device_id, uint8_t iout_level)
 {
 	if (iout_level > 7U)
 	{
@@ -854,7 +844,7 @@ ErrorCode_t AD4130_Channel_2(
 	/* ENABLE_2,SETUP_2,AINP_2(AIN11),AINM_2(AIN12),I_OUT0_CH_2(AIN10) */
 	channel_2_val = (
 			0b100000010110110000001010
-			| ((uint32_t)iout_level << 20)
+			| ((uint32_t) iout_level << 20)
 	);
 
 	tx[0] = (channel_2_val >> 16) & 0xFFU;
@@ -873,10 +863,7 @@ ErrorCode_t AD4130_Channel_2(
 	return result;
 }
 
-ErrorCode_t AD4130_Channel_3(
-		uint8_t adc_device_id,
-		uint8_t iout_level
-)
+ErrorCode_t AD4130_Channel_3(uint8_t adc_device_id, uint8_t iout_level)
 {
 	if (iout_level > 7U)
 	{
@@ -891,7 +878,7 @@ ErrorCode_t AD4130_Channel_3(
 	/* ENABLE_3,SETUP_3,AINP_3(AIN14),AINM_3(AIN15),I_OUT0_CH_3(AIN13) */
 	channel_3_val = (
 			0b100000011100111100001101
-			| ((uint32_t)iout_level << 20)
+			| ((uint32_t) iout_level << 20)
 	);
 
 	tx[0] = (channel_3_val >> 16) & 0xFFU;

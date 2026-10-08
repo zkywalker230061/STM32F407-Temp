@@ -12,7 +12,10 @@
 #define SENSOR_COEFFS_STORAGE_SECTOR		FLASH_SECTOR_11
 #define SENSOR_COEFFS_STORAGE_MAGIC			0x48464353U  /* SCFH */
 #define SENSOR_COEFFS_STORAGE_HEADER_SIZE	12U
-#define SENSOR_COEFFS_STORAGE_RECORD_SIZE	360U
+#define SENSOR_COEFFS_STORAGE_RECORD_SIZE	( \
+		SENSOR_COEFFS_STORAGE_HEADER_SIZE \
+		+ SENSOR_COEFFS_BINARY_MAX_SIZE \
+)
 #define SENSOR_COEFFS_STORAGE_RECORD_COUNT	364U
 
 
@@ -60,9 +63,9 @@ ErrorCode_t Sensor_Coeffs_Storage_Save(
 	for (uint32_t record = 0; record < SENSOR_COEFFS_STORAGE_RECORD_COUNT; record++)
 	{
 		if (
-				(*(const uint32_t *)record_address == 0xFFFFFFFFU)
-				&& (*(const uint32_t *)(record_address + 4U) == 0xFFFFFFFFU)
-				&& (*(const uint32_t *)(record_address + 8U) == 0xFFFFFFFFU)
+				(*(const uint32_t *) record_address == 0xFFFFFFFFU)
+				&& (*(const uint32_t *) (record_address + 4U) == 0xFFFFFFFFU)
+				&& (*(const uint32_t *) (record_address + 8U) == 0xFFFFFFFFU)
 		)
 		{
 			break;
@@ -95,14 +98,8 @@ ErrorCode_t Sensor_Coeffs_Storage_Save(
 		return ERROR_CODE_COEFFS_STORAGE_WRITE;
 	}
 
-	target = (
-			(uint32_t)adc_device_id
-			| ((uint32_t)channel << 8)
-	);
-	status = Sensor_Coeffs_Storage_Write_Word(
-			record_address + 8U,
-			target
-	);
+	target = (uint32_t) adc_device_id | ((uint32_t) channel << 8);
+	status = Sensor_Coeffs_Storage_Write_Word(record_address + 8U, target);
 	if (status != HAL_OK)
 	{
 		HAL_FLASH_Lock();
@@ -121,7 +118,7 @@ ErrorCode_t Sensor_Coeffs_Storage_Save(
 			if (data_position < binary_length)
 			{
 				write_data &= ~(0xFFU << (byte * 8U));
-				write_data |= (uint32_t)binary_data[data_position] << (byte * 8U);
+				write_data |= (uint32_t) binary_data[data_position] << (byte * 8U);
 				data_position++;
 			}
 		}
@@ -136,15 +133,12 @@ ErrorCode_t Sensor_Coeffs_Storage_Save(
 		write_address += sizeof(write_data);
 	}
 
-	if (
-			*(const uint32_t *)(record_address + 4U)
-			!= binary_length
-	)
+	if (*(const uint32_t *) (record_address + 4U) != binary_length)
 	{
 		HAL_FLASH_Lock();
 		return ERROR_CODE_COEFFS_STORAGE_VERIFY;
 	}
-	if (*(const uint32_t *)(record_address + 8U) != target)
+	if (*(const uint32_t *) (record_address + 8U) != target)
 	{
 		HAL_FLASH_Lock();
 		return ERROR_CODE_COEFFS_STORAGE_VERIFY;
@@ -153,7 +147,7 @@ ErrorCode_t Sensor_Coeffs_Storage_Save(
 	for (uint32_t i = 0; i < binary_length; i++)
 	{
 		if (
-				*(const uint8_t *)(
+				*(const uint8_t *) (
 						record_address
 						+ SENSOR_COEFFS_STORAGE_HEADER_SIZE + i
 				) != binary_data[i]
@@ -176,7 +170,7 @@ ErrorCode_t Sensor_Coeffs_Storage_Save(
 
 	HAL_FLASH_Lock();
 
-	if (*(const uint32_t *)record_address != SENSOR_COEFFS_STORAGE_MAGIC)
+	if (*(const uint32_t *) record_address != SENSOR_COEFFS_STORAGE_MAGIC)
 	{
 		return ERROR_CODE_COEFFS_STORAGE_VERIFY;
 	}
@@ -214,21 +208,21 @@ ErrorCode_t Sensor_Coeffs_Storage_Load(
 	for (uint32_t record = 0; record < SENSOR_COEFFS_STORAGE_RECORD_COUNT; record++)
 	{
 		if (
-				(*(const uint32_t *)record_address == 0xFFFFFFFFU)
-				&& (*(const uint32_t *)(record_address + 4U) == 0xFFFFFFFFU)
-				&& (*(const uint32_t *)(record_address + 8U) == 0xFFFFFFFFU)
+				(*(const uint32_t *) record_address == 0xFFFFFFFFU)
+				&& (*(const uint32_t *) (record_address + 4U) == 0xFFFFFFFFU)
+				&& (*(const uint32_t *) (record_address + 8U) == 0xFFFFFFFFU)
 		)
 		{
 			break;
 		}
 
-		if (*(const uint32_t *)record_address != SENSOR_COEFFS_STORAGE_MAGIC)
+		if (*(const uint32_t *) record_address != SENSOR_COEFFS_STORAGE_MAGIC)
 		{
 			record_address += SENSOR_COEFFS_STORAGE_RECORD_SIZE;
 			continue;
 		}
 
-		stored_length = *(const uint32_t *)(record_address + 4U);
+		stored_length = *(const uint32_t *) (record_address + 4U);
 		if (
 				(stored_length < SENSOR_COEFFS_BINARY_MIN_SIZE)
 				|| (stored_length > SENSOR_COEFFS_BINARY_MAX_SIZE)
@@ -238,21 +232,21 @@ ErrorCode_t Sensor_Coeffs_Storage_Load(
 			continue;
 		}
 
-		target = *(const uint32_t *)(record_address + 8U);
+		target = *(const uint32_t *) (record_address + 8U);
 		if ((target & 0xFFFF0000U) != 0U)
 		{
 			record_address += SENSOR_COEFFS_STORAGE_RECORD_SIZE;
 			continue;
 		}
 
-		stored_adc_device_id = (uint8_t)(target & 0xFFU);
-		stored_channel = (uint8_t)((target >> 8) & 0xFFU);
+		stored_adc_device_id = (uint8_t) (target & 0xFFU);
+		stored_channel = (uint8_t) ((target >> 8) & 0xFFU);
 		if (
 				(stored_adc_device_id == adc_device_id)
 				&& (stored_channel == channel)
 		)
 		{
-			*binary_data = (const uint8_t *)(
+			*binary_data = (const uint8_t *) (
 					record_address + SENSOR_COEFFS_STORAGE_HEADER_SIZE
 			);
 			*binary_length = stored_length;
