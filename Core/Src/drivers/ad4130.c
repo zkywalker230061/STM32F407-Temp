@@ -25,6 +25,16 @@ static AD4130Device_t ad4130_devices[AD4130_DEVICE_COUNT] = {
 		.hspi = &hspi3,
 		.cs_port = SPI3_CS2_GPIO_Port,
 		.cs_pin = SPI3_CS2_Pin
+	},
+	{
+		.hspi = &hspi3,
+		.cs_port = SPI3_CS3_GPIO_Port,
+		.cs_pin = SPI3_CS3_Pin
+	},
+	{
+		.hspi = &hspi3,
+		.cs_port = SPI3_CS4_GPIO_Port,
+		.cs_pin = SPI3_CS4_Pin
 	}
 };
 
@@ -1006,6 +1016,7 @@ ErrorCode_t AD4130_Channel_0(uint8_t adc_device_id, uint8_t iout_level)
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_0,SETUP_0,AINP_0(AIN0),AINM_0(AIN1),I_OUT0_CH_0(AIN6) */
 	channel_0_val = 0b100000000000000100000110;
+//	channel_0_val = 0b100000000010001000010000;
 
 	tx[0] = (channel_0_val >> 16) & 0xFFU;
 	tx[1] = (channel_0_val >> 8) & 0xFFU;
@@ -1043,6 +1054,7 @@ ErrorCode_t AD4130_Channel_1(uint8_t adc_device_id, uint8_t iout_level)
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_1,SETUP_1,AINP_1(AIN8),AINM_1(AIN9),I_OUT0_CH_1(AIN7) */
 	channel_1_val = 0b100100010000100100000111;
+//	channel_1_val = 0b100100001010011000000100;
 
 	tx[0] = (channel_1_val >> 16) & 0xFFU;
 	tx[1] = (channel_1_val >> 8) & 0xFFU;

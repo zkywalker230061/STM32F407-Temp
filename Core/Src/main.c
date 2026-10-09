@@ -56,6 +56,9 @@
 
 /* USER CODE BEGIN PV */
 
+static uint8_t usb_communication_initialized;
+static uint8_t industrial_communication_initialized;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -111,6 +114,8 @@ int main(void)
 	ErrorCode_t read_result;
 
 
+	/* USB communication initialize */
+	usb_communication_initialized = 1U;
 	HAL_Delay(2000);
 
 	/* sensor_adc: ADC initialize */
@@ -143,6 +148,7 @@ int main(void)
 	{
 		Error_Handler();
 	}
+	industrial_communication_initialized = 1U;
 
   /* USER CODE END 2 */
 
@@ -246,8 +252,15 @@ void Error_Handler(void)
 
   while (1)
   {
-		(void) usb_comm_process();
-		(void) communication_select_process();
+		if (usb_communication_initialized != 0U)
+		{
+			(void) usb_comm_process();
+		}
+
+		if (industrial_communication_initialized != 0U)
+		{
+			(void) communication_select_process();
+		}
   }
   /* USER CODE END Error_Handler_Debug */
 }
