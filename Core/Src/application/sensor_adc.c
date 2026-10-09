@@ -211,6 +211,20 @@ static ErrorCode_t initialize_once(void)
 			adc_device_id++
 	)
 	{
+		result = AD4130_FIFO_Enable(
+				adc_device_id,
+				AD4130_SENSOR_CHANNEL_COUNT
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			printf(
+					"%d: ADC %u FIFO setup error\r\n",
+					(int) result,
+					(unsigned int) adc_device_id
+			);
+			return result;
+		}
+
 		result = AD4130_Set_Conversion_Mode(
 				adc_device_id,
 				AD4130_CONVERSION_MODE_NORMAL
@@ -225,8 +239,6 @@ static ErrorCode_t initialize_once(void)
 			return result;
 		}
 	}
-
-	HAL_Delay(500);
 
 	if (por_detected != 0U)
 	{

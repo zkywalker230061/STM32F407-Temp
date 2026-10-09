@@ -120,7 +120,10 @@ ErrorCode_t system_config_set_synchronized_measurement_enabled(uint8_t enabled)
 		}
 		else
 		{
-			result = AD4130_FIFO_Disable(adc_device_id);
+			result = AD4130_FIFO_Enable(
+					adc_device_id,
+					AD4130_SENSOR_CHANNEL_COUNT
+			);
 			if (result == ERROR_CODE_NONE)
 			{
 				result = AD4130_Set_Conversion_Mode(adc_device_id, new_mode);
@@ -144,7 +147,10 @@ ErrorCode_t system_config_set_synchronized_measurement_enabled(uint8_t enabled)
 				}
 				else
 				{
-					(void) AD4130_FIFO_Disable(rollback_device_id);
+					(void) AD4130_FIFO_Enable(
+							rollback_device_id,
+							AD4130_SENSOR_CHANNEL_COUNT
+					);
 					(void) AD4130_Set_Conversion_Mode(rollback_device_id, previous_mode);
 				}
 			}
