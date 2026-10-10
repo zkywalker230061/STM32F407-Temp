@@ -767,12 +767,12 @@ ErrorCode_t AD4130_Set_Filter(uint8_t adc_device_id, uint8_t filter)
 	{
 		case AD4130_FILTER_SINC3_REJ60:
 			/* Sinc3 + REJ60 (FS 48) */
-			filter_value = 0b111000000011000000110000;
+			filter_value = 0b110000000011000000110000;
 			break;
 
 		case AD4130_FILTER_POST_FILTER_3:
 			/* Sinc3 + Post Filter 3 */
-			filter_value = 0b111000000111000000110000;
+			filter_value = 0b110000000111000000110000;
 			break;
 
 		default:
