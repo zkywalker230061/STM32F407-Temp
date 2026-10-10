@@ -31,6 +31,10 @@ typedef struct
 
 #define AD4130_CONVERSION_MODE_NORMAL	0x00U
 #define AD4130_CONVERSION_MODE_SYNC		0x0AU
+#define AD4130_CONVERSION_MODE_FAST		0x00U
+
+#define AD4130_FILTER_SINC3_REJ60		0U
+#define AD4130_FILTER_POST_FILTER_3		1U
 
 typedef struct
 {
@@ -187,6 +191,7 @@ ErrorCode_t AD4130_FIFO_Read(
 		AD4130FIFOSample_t *samples,
 		uint8_t sample_count
 );
+ErrorCode_t AD4130_Set_Filter(uint8_t adc_device_id, uint8_t filter);
 ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode);
 void AD4130_Synchronize(void);
 

@@ -183,35 +183,57 @@ ErrorCode_t usb_comm_process(void)
 			break;
 		}
 
-		case USB_CDC_COMMAND_SYNE:
+		case USB_CDC_COMMAND_NORM:
 		{
-			command_result = system_config_set_synchronized_measurement_enabled(1U);
+			command_result = system_config_set_measurement_mode(
+					SYSTEM_MEASUREMENT_MODE_NORMAL
+			);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			if (command_result != ERROR_CODE_NONE)
 			{
 				printf(
-						"%d: Synchronized measurement enable error\r\n",
+						"%d: Measurement mode change to NORMAL error\r\n",
 						(int) command_result
 				);
 				return command_result;
 			}
-			printf("Synchronized measurement enabled\r\n");
+			printf("Measurement mode changed to NORMAL\r\n");
 			break;
 		}
 
-		case USB_CDC_COMMAND_SYND:
+		case USB_CDC_COMMAND_SYNC:
 		{
-			command_result = system_config_set_synchronized_measurement_enabled(0U);
+			command_result = system_config_set_measurement_mode(
+					SYSTEM_MEASUREMENT_MODE_SYNC
+			);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			if (command_result != ERROR_CODE_NONE)
 			{
 				printf(
-						"%d: Synchronized measurement disable error\r\n",
+						"%d: Measurement mode change to SYNC error\r\n",
 						(int) command_result
 				);
 				return command_result;
 			}
-			printf("Synchronized measurement disabled\r\n");
+			printf("Measurement mode changed to SYNC\r\n");
+			break;
+		}
+
+		case USB_CDC_COMMAND_FAST:
+		{
+			command_result = system_config_set_measurement_mode(
+					SYSTEM_MEASUREMENT_MODE_FAST
+			);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: Measurement mode change to FAST error\r\n",
+						(int) command_result
+				);
+				return command_result;
+			}
+			printf("Measurement mode changed to FAST\r\n");
 			break;
 		}
 

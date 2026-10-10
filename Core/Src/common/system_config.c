@@ -12,7 +12,7 @@ typedef struct
 	uint32_t modbus_rtu_baud_rate;
 	ModbusRTUParity_t modbus_rtu_parity;
 	uint8_t measurement_log_enabled;
-	uint8_t synchronized_measurement_enabled;
+	SystemMeasurementMode_t measurement_mode;
 } SystemConfig_t;
 
 static SystemConfig_t system_config = {
@@ -22,7 +22,7 @@ static SystemConfig_t system_config = {
 	.modbus_rtu_baud_rate = 115200UL,
 	.modbus_rtu_parity = MODBUS_RTU_PARITY_EVEN,
 	.measurement_log_enabled = 0U,
-	.synchronized_measurement_enabled = 0U
+	.measurement_mode = SYSTEM_MEASUREMENT_MODE_NORMAL
 };
 
 
@@ -66,39 +66,64 @@ void system_config_set_measurement_log_enabled(uint8_t enabled)
 	system_config.measurement_log_enabled = (enabled != 0U) ? 1U : 0U;
 }
 
-uint8_t system_config_synchronized_measurement_enabled(void)
+SystemMeasurementMode_t system_config_get_measurement_mode(void)
 {
-	return system_config.synchronized_measurement_enabled;
+	return system_config.measurement_mode;
 }
 
-ErrorCode_t system_config_set_synchronized_measurement_enabled(uint8_t enabled)
+ErrorCode_t system_config_set_measurement_mode(SystemMeasurementMode_t mode)
 {
 	ErrorCode_t result;
-	uint8_t previous_mode;
-	uint8_t new_mode;
+	uint8_t previous_conversion_mode;
+	uint8_t previous_filter;
+	uint8_t new_conversion_mode;
+	uint8_t new_filter;
 
-	enabled = (enabled != 0U) ? 1U : 0U;
-	if (enabled == system_config.synchronized_measurement_enabled)
+	switch (mode)
+	{
+		case SYSTEM_MEASUREMENT_MODE_NORMAL:
+			new_conversion_mode = AD4130_CONVERSION_MODE_NORMAL;
+			new_filter = AD4130_FILTER_POST_FILTER_3;
+			break;
+
+		case SYSTEM_MEASUREMENT_MODE_SYNC:
+			new_conversion_mode = AD4130_CONVERSION_MODE_SYNC;
+			new_filter = AD4130_FILTER_POST_FILTER_3;
+			break;
+
+		case SYSTEM_MEASUREMENT_MODE_FAST:
+			new_conversion_mode = AD4130_CONVERSION_MODE_FAST;
+			new_filter = AD4130_FILTER_SINC3_REJ60;
+			break;
+
+		default:
+			return ERROR_CODE_SYSTEM_CONFIG_UNSUPPORTED_MODE;
+	}
+
+	if (mode == system_config.measurement_mode)
 	{
 		return ERROR_CODE_NONE;
 	}
 
-	if (system_config.synchronized_measurement_enabled != 0U)
+	switch (system_config.measurement_mode)
 	{
-		previous_mode = AD4130_CONVERSION_MODE_SYNC;
-	}
-	else
-	{
-		previous_mode = AD4130_CONVERSION_MODE_NORMAL;
-	}
+		case SYSTEM_MEASUREMENT_MODE_NORMAL:
+			previous_conversion_mode = AD4130_CONVERSION_MODE_NORMAL;
+			previous_filter = AD4130_FILTER_POST_FILTER_3;
+			break;
 
-	if (enabled != 0U)
-	{
-		new_mode = AD4130_CONVERSION_MODE_SYNC;
-	}
-	else
-	{
-		new_mode = AD4130_CONVERSION_MODE_NORMAL;
+		case SYSTEM_MEASUREMENT_MODE_SYNC:
+			previous_conversion_mode = AD4130_CONVERSION_MODE_SYNC;
+			previous_filter = AD4130_FILTER_POST_FILTER_3;
+			break;
+
+		case SYSTEM_MEASUREMENT_MODE_FAST:
+			previous_conversion_mode = AD4130_CONVERSION_MODE_FAST;
+			previous_filter = AD4130_FILTER_SINC3_REJ60;
+			break;
+
+		default:
+			return ERROR_CODE_SYSTEM_CONFIG_UNSUPPORTED_MODE;
 	}
 
 	for (
@@ -110,7 +135,14 @@ ErrorCode_t system_config_set_synchronized_measurement_enabled(uint8_t enabled)
 		result = AD4130_FIFO_Disable(adc_device_id);
 		if (result == ERROR_CODE_NONE)
 		{
-			result = AD4130_Set_Conversion_Mode(adc_device_id, new_mode);
+			result = AD4130_Set_Conversion_Mode(
+					adc_device_id,
+					new_conversion_mode
+			);
+		}
+		if (result == ERROR_CODE_NONE)
+		{
+			result = AD4130_Set_Filter(adc_device_id, new_filter);
 		}
 		if (result == ERROR_CODE_NONE)
 		{
@@ -130,7 +162,11 @@ ErrorCode_t system_config_set_synchronized_measurement_enabled(uint8_t enabled)
 				(void) AD4130_FIFO_Disable(rollback_device_id);
 				(void) AD4130_Set_Conversion_Mode(
 						rollback_device_id,
-						previous_mode
+						previous_conversion_mode
+				);
+				(void) AD4130_Set_Filter(
+						rollback_device_id,
+						previous_filter
 				);
 				(void) AD4130_FIFO_Enable(
 						rollback_device_id,
@@ -142,7 +178,7 @@ ErrorCode_t system_config_set_synchronized_measurement_enabled(uint8_t enabled)
 		}
 	}
 
-	system_config.synchronized_measurement_enabled = enabled;
+	system_config.measurement_mode = mode;
 	sensor_read_reset_synchronized_conversion();
 
 	return ERROR_CODE_NONE;

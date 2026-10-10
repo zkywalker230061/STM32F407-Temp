@@ -31,13 +31,15 @@ ErrorCode_t read_sensor(void)
 	uint8_t channels[AD4130_SENSOR_CHANNEL_COUNT];
 	float resistances[AD4130_SENSOR_CHANNEL_COUNT];
 	uint8_t fifo_ready[AD4130_DEVICE_COUNT] = {0U};
+	SystemMeasurementMode_t measurement_mode;
 	uint8_t synchronized;
 	uint8_t channel;
 	float measured_resistance;
 	float measured_temperature;
 	uint8_t read_count = 0U;
 
-	synchronized = system_config_synchronized_measurement_enabled();
+	measurement_mode = system_config_get_measurement_mode();
+	synchronized = (measurement_mode == SYSTEM_MEASUREMENT_MODE_SYNC) ? 1U : 0U;
 	if ((synchronized != 0U) && (synchronized_conversion_active == 0U))
 	{
 		/* Start synchronized sequence */

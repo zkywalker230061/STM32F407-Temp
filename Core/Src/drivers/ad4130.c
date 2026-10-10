@@ -63,7 +63,6 @@ static const uint8_t ad4130_iout_config_values[8] = {
 AD4130Iouts_t ad4130_iouts[AD4130_DEVICE_COUNT] = {0};
 
 static ErrorCode_t AD4130_Config(uint8_t adc_device_id);
-static ErrorCode_t AD4130_Filter(uint8_t adc_device_id);
 static ErrorCode_t AD4130_Set_IOUT_Level(
 		uint8_t adc_device_id,
 		uint8_t setup,
@@ -698,7 +697,10 @@ ErrorCode_t AD4130_Init(
 		return result;
 	}
 
-	result = AD4130_Filter(adc_device_id);
+	result = AD4130_Set_Filter(
+			adc_device_id,
+			AD4130_FILTER_POST_FILTER_3
+	);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
@@ -753,19 +755,33 @@ static ErrorCode_t AD4130_Config(uint8_t adc_device_id)
 	return ERROR_CODE_NONE;
 }
 
-static ErrorCode_t AD4130_Filter(uint8_t adc_device_id)
+ErrorCode_t AD4130_Set_Filter(uint8_t adc_device_id, uint8_t filter)
 {
 	ErrorCode_t result;
-	uint32_t filter_val;
+	uint32_t filter_value;
 	uint8_t tx[3] = {0};
 
 	/* Bits 23-21,15-12,10-0 */
 	/* SETTLE_n,FILTER_MODE_n,FS_n */
-	filter_val = 0b111000000011000000110000;
+	switch (filter)
+	{
+		case AD4130_FILTER_SINC3_REJ60:
+			/* Sinc3 + REJ60 (FS 48) */
+			filter_value = 0b111000000011000000110000;
+			break;
 
-	tx[0] = (filter_val >> 16) & 0xFFU;
-	tx[1] = (filter_val >> 8) & 0xFFU;
-	tx[2] = filter_val & 0xFFU;
+		case AD4130_FILTER_POST_FILTER_3:
+			/* Sinc3 + Post Filter 3 */
+			filter_value = 0b111000000111000000110000;
+			break;
+
+		default:
+			return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	tx[0] = (filter_value >> 16) & 0xFFU;
+	tx[1] = (filter_value >> 8) & 0xFFU;
+	tx[2] = filter_value & 0xFFU;
 
 	for (uint8_t i = 0; i < 8U; i++)
 	{
