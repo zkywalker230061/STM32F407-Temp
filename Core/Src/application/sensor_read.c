@@ -48,7 +48,11 @@ ErrorCode_t read_sensor(void)
 	}
 
 	/* Check FIFO ready */
-	for (uint8_t adc_device_id = AD4130_DEVICE_ID_MIN; adc_device_id <= AD4130_DEVICE_ID_MAX; adc_device_id++)
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
 	{
 		result = AD4130_FIFO_Ready(
 				adc_device_id,

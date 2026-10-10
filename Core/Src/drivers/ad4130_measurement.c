@@ -16,6 +16,7 @@ static ErrorCode_t AD4130_Convert_Resistance(
 		uint8_t adc_device_id,
 		uint8_t channel,
 		uint32_t data,
+		const AD4130Iouts_t *iouts,
 		float *resistance
 );
 static ErrorCode_t AD4130_Get_Autorange_Level(
@@ -32,6 +33,7 @@ ErrorCode_t AD4130_Read_Resistance(
 )
 {
 	ErrorCode_t result;
+	AD4130Iouts_t iouts_snapshot;
 	uint32_t data_status = 0;
 	uint32_t data = 0;
 	uint8_t status = 0;
@@ -44,6 +46,7 @@ ErrorCode_t AD4130_Read_Resistance(
 	{
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
 	}
+	iouts_snapshot = ad4130_iouts[adc_device_id - 1U];
 	*channel = 0xFFU;
 	*resistance = 0.0f;
 
@@ -76,6 +79,7 @@ ErrorCode_t AD4130_Read_Resistance(
 			adc_device_id,
 			*channel,
 			data,
+			&iouts_snapshot,
 			resistance
 	);
 }
@@ -90,7 +94,15 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 {
 	ErrorCode_t result;
 	AD4130FIFOSample_t samples[AD4130_SENSOR_CHANNEL_COUNT];
+	AD4130Iouts_t iouts_snapshot;
 
+	if (
+			(adc_device_id < AD4130_DEVICE_ID_MIN)
+			|| (adc_device_id > AD4130_DEVICE_ID_MAX)
+	)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
+	}
 	if (
 			(channels == NULL)
 			|| (resistances == NULL)
@@ -103,6 +115,7 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 	{
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
 	}
+	iouts_snapshot = ad4130_iouts[adc_device_id - 1U];
 
 	result = AD4130_FIFO_Read(adc_device_id, samples, sample_count);
 	if (result != ERROR_CODE_NONE)
@@ -124,6 +137,7 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 				adc_device_id,
 				channels[i],
 				samples[i].data,
+				&iouts_snapshot,
 				&resistances[i]
 		);
 	}
@@ -135,6 +149,7 @@ static ErrorCode_t AD4130_Convert_Resistance(
 		uint8_t adc_device_id,
 		uint8_t channel,
 		uint32_t data,
+		const AD4130Iouts_t *iouts,
 		float *resistance
 )
 {
@@ -148,23 +163,23 @@ static ErrorCode_t AD4130_Convert_Resistance(
 	switch (channel)
 	{
 		case 0U:
-			iout = ad4130_iouts[adc_device_id - 1U].i_1;
-			iout_level = ad4130_iouts[adc_device_id - 1U].level_1;
+			iout = iouts->i_1;
+			iout_level = iouts->level_1;
 			break;
 
 		case 1U:
-			iout = ad4130_iouts[adc_device_id - 1U].i_2;
-			iout_level = ad4130_iouts[adc_device_id - 1U].level_2;
+			iout = iouts->i_2;
+			iout_level = iouts->level_2;
 			break;
 
 		case 2U:
-			iout = ad4130_iouts[adc_device_id - 1U].i_3;
-			iout_level = ad4130_iouts[adc_device_id - 1U].level_3;
+			iout = iouts->i_3;
+			iout_level = iouts->level_3;
 			break;
 
 		case 3U:
-			iout = ad4130_iouts[adc_device_id - 1U].i_4;
-			iout_level = ad4130_iouts[adc_device_id - 1U].level_4;
+			iout = iouts->i_4;
+			iout_level = iouts->level_4;
 			break;
 
 		default:

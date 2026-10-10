@@ -130,6 +130,10 @@ extern AD4130Iouts_t ad4130_iouts[AD4130_DEVICE_COUNT];
 
 /* ------------------------------------------------------------------------ */
 
+ErrorCode_t AD4130_Check_Status_Error(
+		uint8_t adc_device_id,
+		uint8_t status
+);
 ErrorCode_t AD4130_Read_8_Bit(
 		uint8_t adc_device_id,
 		uint8_t reg_addr,
@@ -160,19 +164,9 @@ ErrorCode_t AD4130_Reset(uint8_t adc_device_id);
 ErrorCode_t AD4130_Internal_Calibrate(
 		uint8_t adc_device_id,
 		uint8_t channel,
-		uint8_t *setup_pointer,
+		uint8_t *setup_value,
 		uint32_t *gain_value,
 		uint32_t *offset_value
-);
-void AD4130_Synchronize(void);
-ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode);
-ErrorCode_t AD4130_FIFO_Enable(uint8_t adc_device_id, uint8_t watermark);
-ErrorCode_t AD4130_FIFO_Disable(uint8_t adc_device_id);
-ErrorCode_t AD4130_FIFO_Ready(uint8_t adc_device_id, uint8_t *ready);
-ErrorCode_t AD4130_FIFO_Read(
-		uint8_t adc_device_id,
-		AD4130FIFOSample_t *samples,
-		uint8_t sample_count
 );
 
 /* ------------------------------------------------------------------------ */
@@ -181,17 +175,20 @@ ErrorCode_t AD4130_Init(
 		uint8_t adc_device_id,
 		AD4130InitResult_t *init_result
 );
-ErrorCode_t AD4130_Check_Status_Error(
-		uint8_t adc_device_id,
-		uint8_t status
-);
-
-/* ------------------------------------------------------------------------ */
-
 ErrorCode_t AD4130_Channel_0(uint8_t adc_device_id, uint8_t iout_level);
 ErrorCode_t AD4130_Channel_1(uint8_t adc_device_id, uint8_t iout_level);
 ErrorCode_t AD4130_Channel_2(uint8_t adc_device_id, uint8_t iout_level);
 ErrorCode_t AD4130_Channel_3(uint8_t adc_device_id, uint8_t iout_level);
+ErrorCode_t AD4130_FIFO_Enable(uint8_t adc_device_id, uint8_t watermark);
+ErrorCode_t AD4130_FIFO_Disable(uint8_t adc_device_id);
+ErrorCode_t AD4130_FIFO_Ready(uint8_t adc_device_id, uint8_t *ready);
+ErrorCode_t AD4130_FIFO_Read(
+		uint8_t adc_device_id,
+		AD4130FIFOSample_t *samples,
+		uint8_t sample_count
+);
+ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode);
+void AD4130_Synchronize(void);
 
 /* ------------------------------------------------------------------------ */
 

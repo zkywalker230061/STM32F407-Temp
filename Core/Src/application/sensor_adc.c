@@ -18,6 +18,7 @@ ErrorCode_t sensor_adc_initialize(void)
 {
 	ErrorCode_t result;
 
+	/* initialize adc */
 	result = initialize_once();
 	if (
 			(result == ERROR_CODE_NONE)
@@ -27,6 +28,7 @@ ErrorCode_t sensor_adc_initialize(void)
 		return result;
 	}
 
+	/* error - retry initialize */
 	for (
 			uint8_t retry = 0U;
 			retry < SENSOR_ADC_INITIALIZE_RETRY_COUNT;
@@ -66,6 +68,7 @@ static ErrorCode_t initialize_once(void)
 	uint8_t setup;
 	uint8_t por_detected = 0U;
 
+	/* ad4130: adc initialize */
 	for (
 			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
 			adc_device_id <= AD4130_DEVICE_ID_MAX;
@@ -124,6 +127,7 @@ static ErrorCode_t initialize_once(void)
 
 	HAL_Delay(500);
 
+	/* ad4130: channel initialize */
 	for (
 			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
 			adc_device_id <= AD4130_DEVICE_ID_MAX;
@@ -174,7 +178,12 @@ static ErrorCode_t initialize_once(void)
 //			return result;
 //		}
 
-		for (uint8_t channel = 0U; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
+		/* ad4130: channel internal calibration */
+		for (
+				uint8_t channel = 0U;
+				channel < AD4130_SENSOR_CHANNEL_COUNT;
+				channel++
+		)
 		{
 			result = AD4130_Internal_Calibrate(
 					adc_device_id,
@@ -211,6 +220,7 @@ static ErrorCode_t initialize_once(void)
 			adc_device_id++
 	)
 	{
+		/* ad4130: enable FIFO */
 		result = AD4130_FIFO_Enable(
 				adc_device_id,
 				AD4130_SENSOR_CHANNEL_COUNT
@@ -225,6 +235,7 @@ static ErrorCode_t initialize_once(void)
 			return result;
 		}
 
+		/* ad4130: set conversion mode */
 		result = AD4130_Set_Conversion_Mode(
 				adc_device_id,
 				AD4130_CONVERSION_MODE_NORMAL

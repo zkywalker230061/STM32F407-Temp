@@ -35,5 +35,10 @@
 			<type>2</type>
 			<locationURI>PROJECT_LOC/LwIP</locationURI>
 		</link>
+		<link>
+			<name>USB_Device_Library</name>
+			<type>1</type>
+			<locationURI>PROJECT_LOC/USB_Device_Library</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>

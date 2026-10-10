@@ -160,7 +160,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-		/* ADC read */
+		/* sensor_read: ADC read */
 		read_result = read_sensor();
 		if (
 				(read_result != ERROR_CODE_NONE)
