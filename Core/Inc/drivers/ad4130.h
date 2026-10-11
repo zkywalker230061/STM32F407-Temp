@@ -26,8 +26,8 @@ typedef struct
 	uint32_t data;
 } AD4130FIFOSample_t;
 
-#define AD4130_VREF		1.25f
-#define AD4130_GAIN		128.0f
+#define AD4130_VREF		2.5f
+#define AD4130_GAIN		64.0f
 
 #define AD4130_CONVERSION_MODE_NORMAL	0x00U
 #define AD4130_CONVERSION_MODE_SYNC		0x0AU

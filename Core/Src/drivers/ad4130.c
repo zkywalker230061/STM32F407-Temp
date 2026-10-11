@@ -668,7 +668,7 @@ ErrorCode_t AD4130_Init(
 
 	/* Bits 13,10,9,8,5-2 */
 	/* INT_REF_VAL,DATA_STATUS,CSB_EN,INT_REF_EN,MODE */
-	control_val = 0b0010011100010000;
+	control_val = 0b0000011100010000;
 
 	tx[0] = (control_val >> 8) & 0xFFU;
 	tx[1] = control_val & 0xFFU;
@@ -739,7 +739,7 @@ static ErrorCode_t AD4130_Config(uint8_t adc_device_id)
 
 	/* Bits 12-10,7,6,5-4,3-1 */
 	/* I_OUT0_n,REF_BUFP_n,REF_BUFM_n,REF_SEL_n,PGA_n */
-	config_val = 0b0000000011101110;
+	config_val = 0b0000000011101100;
 
 	for (uint8_t i = 0; i < 8U; i++)
 	{

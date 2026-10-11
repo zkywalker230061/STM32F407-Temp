@@ -6,10 +6,10 @@
 #include "drivers/ad4130.h"
 
 
-#define AD4130_DATA_LOW					0x346DC6U  /* 2.0 mV */
-#define AD4130_DATA_HIGH				0xD1B717U  /* 8.0 mV */
-#define AD4130_DATA_100NA_RETURN		0x01F751U  /* 75 µV at 100 nA */
-										           /* 7.5 mV at 10 µA */
+#define AD4130_DATA_LOW					0x346DC6U  /* 8.0 mV */
+#define AD4130_DATA_HIGH				0xD1B717U  /* 32.0 mV */
+#define AD4130_DATA_100NA_RETURN		0x01F751U  /* 300 µV at 100 nA */
+										           /* 30.0 mV at 10 µA */
 #define AD4130_DATA_100NA_OVER_RANGE	0xF33333U  /* 95% */
 
 static ErrorCode_t AD4130_Convert_Resistance(
