@@ -27,7 +27,6 @@ typedef struct
 } AD4130FIFOSample_t;
 
 #define AD4130_VREF		2.5f
-#define AD4130_GAIN		64.0f
 
 #define AD4130_CONVERSION_MODE_NORMAL	0x00U
 #define AD4130_CONVERSION_MODE_SYNC		0x0AU
@@ -36,19 +35,26 @@ typedef struct
 #define AD4130_FILTER_SINC3_REJ60		0U
 #define AD4130_FILTER_POST_FILTER_3		1U
 
+typedef enum
+{
+	AD4130_RANGE_10UA_GAIN_8 = 0,
+	AD4130_RANGE_10UA_GAIN_16,
+	AD4130_RANGE_10UA_GAIN_32,
+	AD4130_RANGE_10UA_GAIN_64,
+	AD4130_RANGE_20UA_GAIN_64,
+	AD4130_RANGE_50UA_GAIN_64,
+	AD4130_RANGE_100UA_GAIN_64,
+	AD4130_RANGE_200UA_GAIN_64,
+	AD4130_RANGE_200UA_GAIN_128,
+	AD4130_RANGE_OFF,
+	AD4130_RANGE_COUNT
+} AD4130Range_t;
+
 typedef struct
 {
-	uint8_t level_1;
-	uint8_t level_2;
-	uint8_t level_3;
-	uint8_t level_4;
-
-	float i_1;
-	float i_2;
-	float i_3;
-	float i_4;
-} AD4130Iouts_t;
-extern AD4130Iouts_t ad4130_iouts[AD4130_DEVICE_COUNT];
+	float current;
+	float gain;
+} AD4130RangeConfig_t;
 
 /* ------------------------------------------------------------------------ */
 
@@ -179,10 +185,24 @@ ErrorCode_t AD4130_Init(
 		uint8_t adc_device_id,
 		AD4130InitResult_t *init_result
 );
-ErrorCode_t AD4130_Channel_0(uint8_t adc_device_id, uint8_t iout_level);
-ErrorCode_t AD4130_Channel_1(uint8_t adc_device_id, uint8_t iout_level);
-ErrorCode_t AD4130_Channel_2(uint8_t adc_device_id, uint8_t iout_level);
-ErrorCode_t AD4130_Channel_3(uint8_t adc_device_id, uint8_t iout_level);
+ErrorCode_t AD4130_Channel_0(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Channel_1(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Channel_2(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Channel_3(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Get_Range(
+		uint8_t adc_device_id,
+		uint8_t channel,
+		AD4130Range_t *range
+);
+ErrorCode_t AD4130_Get_Range_Config(
+		AD4130Range_t range,
+		AD4130RangeConfig_t *config
+);
+ErrorCode_t AD4130_Set_Range(
+		uint8_t adc_device_id,
+		uint8_t channel,
+		AD4130Range_t range
+);
 ErrorCode_t AD4130_FIFO_Enable(uint8_t adc_device_id, uint8_t watermark);
 ErrorCode_t AD4130_FIFO_Disable(uint8_t adc_device_id);
 ErrorCode_t AD4130_FIFO_Ready(uint8_t adc_device_id, uint8_t *ready);

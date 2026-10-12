@@ -6,23 +6,23 @@
 #include "drivers/ad4130.h"
 
 
-#define AD4130_DATA_LOW					0x346DC6U  /* 8.0 mV */
-#define AD4130_DATA_HIGH				0xD1B717U  /* 32.0 mV */
-#define AD4130_DATA_100NA_RETURN		0x01F751U  /* 300 µV at 100 nA */
-										           /* 30.0 mV at 10 µA */
-#define AD4130_DATA_100NA_OVER_RANGE	0xF33333U  /* 95% */
+/* Gain: 8, 16, 32, 64, 128 */
+#define AD4130_DATA_LOW		0x346DC6U      /* 64, 32, 16, 8, 4 mV */
+#define AD4130_DATA_HIGH		0xD1B717U  /* 256,128,64,32,16 mV */
+
+static uint8_t discard_next_samples
+		[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT] = {0};
 
 static ErrorCode_t AD4130_Convert_Resistance(
-		uint8_t adc_device_id,
-		uint8_t channel,
+		AD4130Range_t range,
 		uint32_t data,
-		const AD4130Iouts_t *iouts,
-		float *resistance
+		float *resistance,
+		AD4130Range_t *new_range
 );
-static ErrorCode_t AD4130_Get_Autorange_Level(
-		uint8_t current_level,
+static ErrorCode_t AD4130_Get_Autorange_Range(
+		AD4130Range_t range,
 		uint32_t data,
-		uint8_t *new_level
+		AD4130Range_t *new_range
 );
 
 
@@ -33,12 +33,17 @@ ErrorCode_t AD4130_Read_Resistance(
 )
 {
 	ErrorCode_t result;
-	AD4130Iouts_t iouts_snapshot;
-	uint32_t data_status = 0;
-	uint32_t data = 0;
-	uint8_t status = 0;
+	ErrorCode_t conversion_result;
+	AD4130Range_t range;
+	AD4130Range_t new_range;
+	uint32_t data_status = 0U;
+	uint32_t data;
+	uint8_t status;
 
-	if ((adc_device_id < AD4130_DEVICE_ID_MIN) || (adc_device_id > AD4130_DEVICE_ID_MAX))
+	if (
+			(adc_device_id < AD4130_DEVICE_ID_MIN)
+			|| (adc_device_id > AD4130_DEVICE_ID_MAX)
+	)
 	{
 		return ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID;
 	}
@@ -46,10 +51,10 @@ ErrorCode_t AD4130_Read_Resistance(
 	{
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
 	}
-	iouts_snapshot = ad4130_iouts[adc_device_id - 1U];
 	*channel = 0xFFU;
 	*resistance = 0.0f;
 
+	/* ad4130: read conversion data */
 	result = AD4130_Read_32_Bit(adc_device_id, AD4130_DATA, &data_status);
 	if (result != ERROR_CODE_NONE)
 	{
@@ -65,6 +70,7 @@ ErrorCode_t AD4130_Read_Resistance(
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
 	}
 
+	/* ad4130: check conversion status */
 	result = AD4130_Check_Status_Error(adc_device_id, status);
 	if (result != ERROR_CODE_NONE)
 	{
@@ -74,14 +80,37 @@ ErrorCode_t AD4130_Read_Resistance(
 	{
 		return ERROR_CODE_MEASUREMENT_NOT_READY;
 	}
+	if (discard_next_samples[adc_device_id-1U][*channel] != 0U)
+	{
+		discard_next_samples[adc_device_id-1U][*channel] = 0U;
+		return ERROR_CODE_MEASUREMENT_NOT_READY;
+	}
 
-	return AD4130_Convert_Resistance(
-			adc_device_id,
-			*channel,
+	/* ad4130: get channel range */
+	result = AD4130_Get_Range(adc_device_id, *channel, &range);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	conversion_result = AD4130_Convert_Resistance(
+			range,
 			data,
-			&iouts_snapshot,
-			resistance
+			resistance,
+			&new_range
 	);
+	if (new_range != range)
+	{
+		/* ad4130: update channel range */
+		result = AD4130_Set_Range(adc_device_id, *channel, new_range);
+		if (result != ERROR_CODE_NONE)
+		{
+			return result;
+		}
+		discard_next_samples[adc_device_id-1U][*channel] = 1U;
+	}
+
+	return conversion_result;
 }
 
 ErrorCode_t AD4130_Read_Resistance_FIFO(
@@ -89,12 +118,16 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 		uint8_t *channels,
 		float *resistances,
 		ErrorCode_t *sample_results,
-		uint8_t sample_count
+		uint8_t sample_count,
+		uint8_t discard_after_range_change
 )
 {
 	ErrorCode_t result;
 	AD4130FIFOSample_t samples[AD4130_SENSOR_CHANNEL_COUNT];
-	AD4130Iouts_t iouts_snapshot;
+	AD4130Range_t ranges[AD4130_SENSOR_CHANNEL_COUNT];
+	AD4130Range_t new_ranges[AD4130_SENSOR_CHANNEL_COUNT];
+	AD4130Range_t new_range;
+	uint8_t channel;
 
 	if (
 			(adc_device_id < AD4130_DEVICE_ID_MIN)
@@ -115,232 +148,166 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 	{
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
 	}
-	iouts_snapshot = ad4130_iouts[adc_device_id - 1U];
 
+	/* ad4130: get channel ranges */
+	for (channel = 0U; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
+	{
+		result = AD4130_Get_Range(adc_device_id, channel, &ranges[channel]);
+		if (result != ERROR_CODE_NONE)
+		{
+			return result;
+		}
+		new_ranges[channel] = ranges[channel];
+	}
+
+	/* ad4130: read FIFO */
 	result = AD4130_FIFO_Read(adc_device_id, samples, sample_count);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 
-	for (uint8_t i = 0U; i < sample_count; i++)
+	for (uint8_t sample = 0U; sample < sample_count; sample++)
 	{
-		channels[i] = samples[i].header & 0x0FU;
-		resistances[i] = 0.0f;
-		if (channels[i] > AD4130_CHANNEL_MAX)
+		channels[sample] = samples[sample].header & 0x0FU;
+		resistances[sample] = 0.0f;
+		channel = channels[sample];
+		if (channel > AD4130_CHANNEL_MAX)
 		{
-			sample_results[i] = ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
+			sample_results[sample] = ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
+			continue;
+		}
+		if (discard_next_samples[adc_device_id-1U][channel] != 0U)
+		{
+			discard_next_samples[adc_device_id-1U][channel] = 0U;
+			sample_results[sample] = ERROR_CODE_MEASUREMENT_NOT_READY;
 			continue;
 		}
 
-		sample_results[i] = AD4130_Convert_Resistance(
-				adc_device_id,
-				channels[i],
-				samples[i].data,
-				&iouts_snapshot,
-				&resistances[i]
+		new_range = ranges[channel];
+		sample_results[sample] = AD4130_Convert_Resistance(
+				ranges[channel],
+				samples[sample].data,
+				&resistances[sample],
+				&new_range
 		);
+		new_ranges[channel] = new_range;
 	}
 
-	return ERROR_CODE_NONE;
-}
-
-static ErrorCode_t AD4130_Convert_Resistance(
-		uint8_t adc_device_id,
-		uint8_t channel,
-		uint32_t data,
-		const AD4130Iouts_t *iouts,
-		float *resistance
-)
-{
-	ErrorCode_t result;
-	ErrorCode_t autorange_result;
-	float iout;
-	float voltage;
-	uint8_t iout_level;
-	uint8_t new_iout_level;
-
-	switch (channel)
+	/* ad4130: set range changes after processing FIFO */
+	for (channel = 0U; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
 	{
-		case 0U:
-			iout = iouts->i_1;
-			iout_level = iouts->level_1;
-			break;
-
-		case 1U:
-			iout = iouts->i_2;
-			iout_level = iouts->level_2;
-			break;
-
-		case 2U:
-			iout = iouts->i_3;
-			iout_level = iouts->level_3;
-			break;
-
-		case 3U:
-			iout = iouts->i_4;
-			iout_level = iouts->level_4;
-			break;
-
-		default:
-			return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
-	}
-
-	if (iout_level == 0U)
-	{
-		return ERROR_CODE_MEASUREMENT_BELOW_RANGE;
-	}
-	if (iout <= 0.0f)
-	{
-		return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
-	}
-
-	voltage = (float) data / 16777216.0f * AD4130_VREF / AD4130_GAIN;
-
-	*resistance = voltage / iout;
-
-	new_iout_level = iout_level;
-	autorange_result = AD4130_Get_Autorange_Level(
-			iout_level,
-			data,
-			&new_iout_level
-	);
-	if (autorange_result != ERROR_CODE_NONE)
-	{
-		return autorange_result;
-	}
-
-	if (new_iout_level != iout_level)
-	{
-		switch (channel)
+		if (new_ranges[channel] == ranges[channel])
 		{
-			case 0U:
-				result = AD4130_Channel_0(adc_device_id, new_iout_level);
-				break;
-
-			case 1U:
-				result = AD4130_Channel_1(adc_device_id, new_iout_level);
-				break;
-
-			case 2U:
-				result = AD4130_Channel_2(adc_device_id, new_iout_level);
-				break;
-
-			case 3U:
-				result = AD4130_Channel_3(adc_device_id, new_iout_level);
-				break;
-
-			default:
-				return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
+			continue;
 		}
 
+		result = AD4130_Set_Range(
+				adc_device_id,
+				channel,
+				new_ranges[channel]
+		);
 		if (result != ERROR_CODE_NONE)
 		{
 			return result;
 		}
-	}
-
-	if (new_iout_level == 0U)
-	{
-		return ERROR_CODE_MEASUREMENT_BELOW_RANGE;
+		if (discard_after_range_change != 0U)
+		{
+			discard_next_samples[adc_device_id-1U][channel] = 1U;
+		}
 	}
 
 	return ERROR_CODE_NONE;
 }
 
-static ErrorCode_t AD4130_Get_Autorange_Level(
-		uint8_t current_level,
+void AD4130_Reset_Range_Transition_State(void)
+{
+	for (uint8_t adc = 0U; adc < AD4130_DEVICE_COUNT; adc++)
+	{
+		for (uint8_t channel = 0U; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
+		{
+			discard_next_samples[adc][channel] = 0U;
+		}
+	}
+}
+
+static ErrorCode_t AD4130_Convert_Resistance(
+		AD4130Range_t range,
 		uint32_t data,
-		uint8_t *new_level
+		float *resistance,
+		AD4130Range_t *new_range
 )
 {
-	if ((current_level < 1U) || (current_level > 7U) || (new_level == NULL))
+	ErrorCode_t result;
+	AD4130RangeConfig_t config;
+	float voltage;
+
+	if ((resistance == NULL) || (new_range == NULL))
 	{
-		return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
+	}
+	*resistance = 0.0f;
+	*new_range = range;
+
+	/* ad4130: get range configuration */
+	result = AD4130_Get_Range_Config(range, &config);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+	if (range == AD4130_RANGE_OFF)
+	{
+		return ERROR_CODE_MEASUREMENT_BELOW_RANGE;
+	}
+	if ((config.current <= 0.0f) || (config.gain <= 0.0f))
+	{
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_RANGE;
+	}
+
+	voltage = (float) data / 16777216.0f * AD4130_VREF / config.gain;
+	*resistance = voltage / config.current;
+
+	return AD4130_Get_Autorange_Range(range, data, new_range);
+}
+
+static ErrorCode_t AD4130_Get_Autorange_Range(
+		AD4130Range_t range,
+		uint32_t data,
+		AD4130Range_t *new_range
+)
+{
+	if (new_range == NULL)
+	{
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
+	}
+	if (range >= AD4130_RANGE_COUNT)
+	{
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_RANGE;
+	}
+	*new_range = range;
+	if (range == AD4130_RANGE_OFF)
+	{
+		return ERROR_CODE_MEASUREMENT_BELOW_RANGE;
 	}
 
 	data &= 0xFFFFFFU;
-	*new_level = current_level;
-
-	/*
-	 * 100 nA is a special level.
-	 */
-	if (current_level == 1U)
+	if (data >= AD4130_DATA_HIGH)
 	{
-		if (data >= AD4130_DATA_100NA_OVER_RANGE)
+		if (range == AD4130_RANGE_10UA_GAIN_8)
 		{
 			return ERROR_CODE_MEASUREMENT_ABOVE_RANGE;
 		}
-		if (data <= AD4130_DATA_100NA_RETURN)
-		{
-			*new_level = 2U;  /* 100 nA -> 10 µA */
-		}
-		return ERROR_CODE_NONE;
-	}
-
-	if (data >= AD4130_DATA_HIGH)
-	{
-		switch (current_level)
-		{
-			case 2U:
-				*new_level = 1U;  /* 10 µA -> 100 nA */
-				break;
-
-			case 3U:
-				*new_level = 2U;  /* 20 µA -> 10 µA */
-				break;
-
-			case 4U:
-				*new_level = 3U;  /* 50 µA -> 20 µA */
-				break;
-
-			case 5U:
-				*new_level = 4U;  /* 100 µA -> 50 µA */
-				break;
-
-			case 6U:
-				*new_level = 5U;  /* 150 µA -> 100 µA */
-				break;
-
-			case 7U:
-				*new_level = 5U;  /* 200 µA -> 100 µA */
-				break;
-
-			default:
-				return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
-		}
+		*new_range = (AD4130Range_t) (range-1U);
 	}
 	else if (data <= AD4130_DATA_LOW)
 	{
-		switch (current_level)
+		if (range == AD4130_RANGE_200UA_GAIN_128)
 		{
-			case 2U:
-				*new_level = 3U;  /* 10 µA -> 20 µA */
-				break;
-
-			case 3U:
-				*new_level = 4U;  /* 20 µA -> 50 µA */
-				break;
-
-			case 4U:
-				*new_level = 5U;  /* 50 µA -> 100 µA */
-				break;
-
-			case 5U:
-				*new_level = 7U;  /* 100 µA -> 200 µA */
-				break;
-
-			case 6U:
-				*new_level = 7U;  /* 150 µA -> 200 µA */
-				break;
-
-			case 7U:
-				*new_level = 0U;  /* 200 µA -> 0 µA */
-				break;
-
-			default:
-				return ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT;
+			*new_range = AD4130_RANGE_OFF;
+			return ERROR_CODE_MEASUREMENT_BELOW_RANGE;
 		}
+		*new_range = (AD4130Range_t) (range+1U);
 	}
+
 	return ERROR_CODE_NONE;
 }

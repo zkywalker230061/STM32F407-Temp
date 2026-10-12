@@ -119,7 +119,7 @@ static ErrorCode_t initialize_once(void)
 			);
 			return ERROR_CODE_AD4130_ID_MISMATCH;
 		}
-		/* ADC_CONTROL:		0x2710 - 0010 0111 0001 0000 */
+		/* ADC_CONTROL:		0x0710 - 0000 0111 0001 0000 */
 		/* IO_CONTROL:		0x0000 - 0000 0000 0000 0000 */
 		/* VBIAS_CONTROL:	0x0000 - 0000 0000 0000 0000 */
 		/* ERROR_EN:		0x007B - 0000 0000 0111 1011 */
@@ -134,7 +134,10 @@ static ErrorCode_t initialize_once(void)
 			adc_device_id++
 	)
 	{
-		result = AD4130_Channel_0(adc_device_id, 2U);
+		result = AD4130_Channel_0(
+				adc_device_id,
+				AD4130_RANGE_10UA_GAIN_64
+		);
 		if (result != ERROR_CODE_NONE)
 		{
 			printf(
@@ -145,7 +148,10 @@ static ErrorCode_t initialize_once(void)
 			return result;
 		}
 
-		result = AD4130_Channel_1(adc_device_id, 2U);
+		result = AD4130_Channel_1(
+				adc_device_id,
+				AD4130_RANGE_10UA_GAIN_64
+		);
 		if (result != ERROR_CODE_NONE)
 		{
 			printf(
@@ -156,7 +162,10 @@ static ErrorCode_t initialize_once(void)
 			return result;
 		}
 
-//		result = AD4130_Channel_2(adc_device_id, 2U);
+//		result = AD4130_Channel_2(
+//				adc_device_id,
+//				AD4130_RANGE_10UA_GAIN_64
+//		);
 //		if (result != ERROR_CODE_NONE)
 //		{
 //			printf(
@@ -167,7 +176,10 @@ static ErrorCode_t initialize_once(void)
 //			return result;
 //		}
 //
-//		result = AD4130_Channel_3(adc_device_id, 2U);
+//		result = AD4130_Channel_3(
+//				adc_device_id,
+//				AD4130_RANGE_10UA_GAIN_64
+//		);
 //		if (result != ERROR_CODE_NONE)
 //		{
 //			printf(

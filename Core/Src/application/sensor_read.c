@@ -42,14 +42,14 @@ ErrorCode_t read_sensor(void)
 	synchronized = (measurement_mode == SYSTEM_MEASUREMENT_MODE_SYNC) ? 1U : 0U;
 	if ((synchronized != 0U) && (synchronized_conversion_active == 0U))
 	{
-		/* Start synchronized sequence */
+		/* ad4130: start synchronized sequence */
 		AD4130_Synchronize();
 		synchronized_conversion_active = 1U;
 
 		return ERROR_CODE_MEASUREMENT_NOT_READY;
 	}
 
-	/* Check FIFO ready */
+	/* ad4130: check FIFO ready */
 	for (
 			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
 			adc_device_id <= AD4130_DEVICE_ID_MAX;
@@ -99,7 +99,11 @@ ErrorCode_t read_sensor(void)
 		synchronized_conversion_active = 0U;
 	}
 
-	for (uint8_t adc_device_id = AD4130_DEVICE_ID_MIN; adc_device_id <= AD4130_DEVICE_ID_MAX; adc_device_id++)
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
 	{
 		if (fifo_ready[adc_device_id-1U] == 0U)
 		{
@@ -112,7 +116,8 @@ ErrorCode_t read_sensor(void)
 				channels,
 				resistances,
 				sample_results,
-				AD4130_SENSOR_CHANNEL_COUNT
+				AD4130_SENSOR_CHANNEL_COUNT,
+				(synchronized == 0U) ? 1U : 0U
 		);
 		if (result != ERROR_CODE_NONE)
 		{
@@ -148,12 +153,16 @@ ErrorCode_t read_sensor(void)
 			channel = channels[sample];
 			measured_resistance = resistances[sample];
 			result = sample_results[sample];
+			if (result == ERROR_CODE_MEASUREMENT_NOT_READY)
+			{
+				continue;
+			}
 			if (result != ERROR_CODE_NONE)
 			{
 				if (
 						(channel <= AD4130_CHANNEL_MAX)
 						&& (
-								(result == ERROR_CODE_MEASUREMENT_ILLEGAL_IOUT)
+								(result == ERROR_CODE_MEASUREMENT_ILLEGAL_RANGE)
 								|| (result == ERROR_CODE_MEASUREMENT_BELOW_RANGE)
 								|| (result == ERROR_CODE_MEASUREMENT_ABOVE_RANGE)
 						)
@@ -180,9 +189,10 @@ ErrorCode_t read_sensor(void)
 				if (
 						(result == ERROR_CODE_AD4130_ILLEGAL_PARAM)
 						|| (result == ERROR_CODE_AD4130_ILLEGAL_DEVICE_ID)
-						|| (result == ERROR_CODE_AD4130_ILLEGAL_IOUT)
+						|| (result == ERROR_CODE_AD4130_ILLEGAL_RANGE)
 						|| (result == ERROR_CODE_AD4130_ILLEGAL_WRITE_LENGTH)
 						|| (result == ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM)
+						|| (result == ERROR_CODE_MEASUREMENT_ILLEGAL_RANGE)
 				)
 				{
 					return result;
@@ -214,9 +224,11 @@ ErrorCode_t read_sensor(void)
 				continue;
 			}
 
-			/* Update resistance and temperature arrays, and Modbus registers */
+			/* update resistance and temperature cache */
 			resistance[adc_device_id - 1U][channel] = measured_resistance;
 			temperature[adc_device_id - 1U][channel] = measured_temperature;
+
+			/* modbus_registers: update input registers */
 			vMBRegInputUpdate(
 					adc_device_id-1U,
 					channel,
@@ -250,6 +262,8 @@ ErrorCode_t read_sensor(void)
 void sensor_read_reset_synchronized_conversion(void)
 {
 	synchronized_conversion_active = 0U;
+	/* ad4130_measurement: reset range transition state */
+	AD4130_Reset_Range_Transition_State();
 }
 
 static ErrorCode_t recover_fifo(
