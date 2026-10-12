@@ -644,6 +644,7 @@ ErrorCode_t AD4130_Init(
 {
 	ErrorCode_t result;
 	uint16_t control_val;
+	uint16_t misc_val;
 	uint16_t error_en_val;
 	uint8_t tx[2] = {0};
 
@@ -668,6 +669,17 @@ ErrorCode_t AD4130_Init(
 	tx[0] = (control_val >> 8) & 0xFFU;
 	tx[1] = control_val & 0xFFU;
 	result = AD4130_Write(adc_device_id, AD4130_ADC_CONTROL, tx, 2U);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	/* Bit 13: CAL_RANGE_X2 */
+	misc_val = 0b0010000000000000;
+
+	tx[0] = (misc_val >> 8) & 0xFFU;
+	tx[1] = misc_val & 0xFFU;
+	result = AD4130_Write(adc_device_id, AD4130_MISC, tx, 2U);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
