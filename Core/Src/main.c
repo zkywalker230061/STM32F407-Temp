@@ -144,6 +144,7 @@ int main(void)
 
 	/* Industrial communication initialize */
 	communication_result = communication_select_initialize();
+	(void) usb_comm_process();
 	if (communication_result != ERROR_CODE_NONE)
 	{
 		Error_Handler();

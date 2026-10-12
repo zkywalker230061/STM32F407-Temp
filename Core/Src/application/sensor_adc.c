@@ -6,6 +6,7 @@
 
 #include "common/ad4130_config_file.h"
 #include "drivers/ad4130.h"
+#include "application/usb_comm.h"
 
 
 #define SENSOR_ADC_INITIALIZE_RETRY_COUNT     3U
@@ -20,6 +21,7 @@ ErrorCode_t sensor_adc_initialize(void)
 
 	/* initialize adc */
 	result = initialize_once();
+	(void) usb_comm_process();
 	if (
 			(result == ERROR_CODE_NONE)
 			|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
@@ -37,6 +39,7 @@ ErrorCode_t sensor_adc_initialize(void)
 	{
 		HAL_Delay(SENSOR_ADC_INITIALIZE_RETRY_DELAY_MS);
 		result = initialize_once();
+		(void) usb_comm_process();
 		if (
 				(result == ERROR_CODE_NONE)
 				|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
