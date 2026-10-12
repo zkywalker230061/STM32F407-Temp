@@ -41,15 +41,15 @@ ErrorCode_t communication_select_initialize(void)
 	switch (mode)
 	{
 		case SYSTEM_COMMUNICATION_MODE_MODBUS_RTU:
-			printf("Modbus RTU initialized\r\n");
+			printf("initialized - Modbus RTU\r\n");
 			break;
 
 		case SYSTEM_COMMUNICATION_MODE_MODBUS_TCP:
-			printf("Modbus TCP initialized\r\n");
+			printf("initialized - Modbus TCP\r\n");
 			break;
 
 		case SYSTEM_COMMUNICATION_MODE_PROFIBUS:
-			printf("PROFIBUS initialized\r\n");
+			printf("initialized - PROFIBUS\r\n");
 			break;
 
 		default:

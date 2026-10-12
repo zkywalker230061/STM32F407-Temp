@@ -115,8 +115,10 @@ int main(void)
 
 
 	/* USB communication initialize */
-	usb_communication_initialized = 1U;
 	HAL_Delay(2000);
+	usb_communication_initialized = 1U;
+	printf("initialized - USB CDC\r\n");
+	(void) usb_comm_process();
 
 	/* sensor_adc: ADC initialize */
 	adc_result = sensor_adc_initialize();

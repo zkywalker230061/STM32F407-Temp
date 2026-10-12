@@ -99,10 +99,7 @@ static ErrorCode_t initialize_once(void)
 		}
 
 		printf(
-			"ADC %u\r\n"
-			"ID: 0x%02X\r\n"
-			"STATUS: 0x%02X\r\n"
-			"ERROR: 0x%04X\r\n",
+			"ADC %u ID: 0x%02X STATUS: 0x%02X ERROR: 0x%04X\r\n",
 			(unsigned int) adc_device_id,
 			/*ID: 0x05 - 0000 0101 */
 			(unsigned int) init_result[adc_device_id-1U].id,
@@ -126,6 +123,7 @@ static ErrorCode_t initialize_once(void)
 		/* IO_CONTROL:		0x0000 - 0000 0000 0000 0000 */
 		/* VBIAS_CONTROL:	0x0000 - 0000 0000 0000 0000 */
 		/* ERROR_EN:		0x007B - 0000 0000 0111 1011 */
+		/* MISC:			0x2000 - 0010 0000 0000 0000 */
 	}
 
 	HAL_Delay(500);
@@ -226,7 +224,7 @@ static ErrorCode_t initialize_once(void)
 					&calibration_results[adc_device_id-1U][gain_index];
 
 			printf(
-					"ADC %u gain %u internal calibration completed: "
+					"ADC %u gain %u calibrated: "
 					"GAIN=0x%06lX, OFFSET=0x%06lX\r\n",
 					(unsigned int) adc_device_id,
 					(unsigned int) calibration_result->gain,
@@ -272,6 +270,8 @@ static ErrorCode_t initialize_once(void)
 			return result;
 		}
 	}
+
+	printf("initialized - ADC(s)\r\n");
 
 	if (por_detected != 0U)
 	{
