@@ -63,9 +63,9 @@ static ErrorCode_t initialize_once(void)
 {
 	ErrorCode_t result;
 	AD4130InitResult_t init_result[AD4130_DEVICE_COUNT] = {0};
-	uint32_t gain_value;
-	uint32_t offset_value;
-	uint8_t setup;
+	AD4130CalibrationResult_t calibration_results
+			[AD4130_DEVICE_COUNT][AD4130_CALIBRATION_GAIN_COUNT] = {0};
+	uint8_t calibration_error_adc_device_id = 0U;
 	uint8_t por_detected = 0U;
 
 	/* ad4130: adc initialize */
@@ -190,38 +190,45 @@ static ErrorCode_t initialize_once(void)
 //			return result;
 //		}
 
-		/* ad4130: channel internal calibration */
+	}
+
+	/* ad4130: gain internal calibration */
+	result = AD4130_Internal_Calibrate(
+			calibration_results,
+			&calibration_error_adc_device_id
+	);
+	if (result != ERROR_CODE_NONE)
+	{
+		printf(
+				"%d: ADC %u internal calibration error\r\n",
+				(int) result,
+				(unsigned int) calibration_error_adc_device_id
+		);
+		return result;
+	}
+
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
+	{
 		for (
-				uint8_t channel = 0U;
-				channel < AD4130_SENSOR_CHANNEL_COUNT;
-				channel++
+				uint8_t gain_index = 0U;
+				gain_index < AD4130_CALIBRATION_GAIN_COUNT;
+				gain_index++
 		)
 		{
-			result = AD4130_Internal_Calibrate(
-					adc_device_id,
-					channel,
-					&setup,
-					&gain_value,
-					&offset_value
-			);
-			if (result != ERROR_CODE_NONE)
-			{
-				printf(
-						"%d: ADC %u CHANNEL_%u internal calibration error\r\n",
-						(int) result,
-						(unsigned int) adc_device_id,
-						(unsigned int) channel
-				);
-				return result;
-			}
+			AD4130CalibrationResult_t *calibration_result =
+					&calibration_results[adc_device_id-1U][gain_index];
 
 			printf(
-					"ADC %u SETUP_%u internal calibration completed: "
+					"ADC %u gain %u internal calibration completed: "
 					"GAIN=0x%06lX, OFFSET=0x%06lX\r\n",
 					(unsigned int) adc_device_id,
-					(unsigned int) setup,
-					(unsigned long) gain_value,
-					(unsigned long) offset_value
+					(unsigned int) calibration_result->gain,
+					(unsigned long) calibration_result->gain_value,
+					(unsigned long) calibration_result->offset_value
 			);
 		}
 	}

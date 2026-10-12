@@ -6,6 +6,9 @@
 #include "spi.h"
 
 
+#define AD4130_GAIN_CALIBRATION_TIMEOUT_MS    5000U
+#define AD4130_OFFSET_CALIBRATION_TIMEOUT_MS  500U
+
 /* ------------------------------------------------------------------------ */
 
 typedef struct
@@ -58,14 +61,55 @@ static const AD4130RangeRegisterConfig_t ad4130_range_configs[] = {
 	{{0.0f, 8.0f}, 0b0000, 0b011}         /* 0 μA, gain 8 */
 };
 
+static const uint8_t ad4130_calibration_gain_configs
+		[AD4130_CALIBRATION_GAIN_COUNT] = {
+	0b011, /* gain 8 */
+	0b100, /* gain 16 */
+	0b101, /* gain 32 */
+	0b110, /* gain 64 */
+	0b111  /* gain 128 */
+};
+
+typedef struct
+{
+	uint32_t gain_value;
+	uint32_t offset_value;
+	uint8_t valid;
+} AD4130CalibrationCache_t;
+
+static AD4130CalibrationCache_t ad4130_calibration_cache
+		[AD4130_DEVICE_COUNT][AD4130_CALIBRATION_GAIN_COUNT] = {0};
 
 static AD4130Range_t ad4130_ranges
 		[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT] = {0};
 
 static ErrorCode_t AD4130_Set_Config(uint8_t adc_device_id);
-static ErrorCode_t AD4130_Run_Calibration(
+static ErrorCode_t AD4130_Start_Calibration(
 		uint8_t adc_device_id,
 		uint8_t mode
+);
+static ErrorCode_t AD4130_Wait_Calibrations(
+		uint32_t start_tick,
+		uint32_t timeout_ms,
+		ErrorCode_t timeout_error,
+		uint8_t *error_adc_device_id
+);
+static ErrorCode_t AD4130_Get_Calibration_Gain_Index(
+		uint8_t gain_config,
+		uint8_t *gain_index
+);
+static ErrorCode_t AD4130_Load_Setup_Calibration(
+		uint8_t adc_device_id,
+		uint8_t setup,
+		uint8_t gain_config
+);
+static ErrorCode_t AD4130_Load_All_Setup_Calibrations(
+		uint8_t *error_adc_device_id
+);
+static ErrorCode_t AD4130_Restore_Channels(
+		const uint32_t channel_values
+				[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT],
+		uint8_t *error_adc_device_id
 );
 
 
@@ -455,14 +499,13 @@ ErrorCode_t AD4130_Reset(uint8_t adc_device_id)
 	return AD4130_Convert_HAL_Status(status);
 }
 
-static ErrorCode_t AD4130_Run_Calibration(
+static ErrorCode_t AD4130_Start_Calibration(
 		uint8_t adc_device_id,
 		uint8_t mode
 )
 {
 	ErrorCode_t result;
 	uint16_t control_value;
-	uint8_t status;
 	uint8_t tx[2] = {0};
 
 	result = AD4130_Read_16_Bit(
@@ -481,155 +524,552 @@ static ErrorCode_t AD4130_Run_Calibration(
 
 	tx[0] = (control_value >> 8) & 0xFFU;
 	tx[1] = control_value & 0xFFU;
-	result = AD4130_Write(adc_device_id, AD4130_ADC_CONTROL, tx, 2U);
+	return AD4130_Write(adc_device_id, AD4130_ADC_CONTROL, tx, 2U);
+}
+
+static ErrorCode_t AD4130_Wait_Calibrations(
+		uint32_t start_tick,
+		uint32_t timeout_ms,
+		ErrorCode_t timeout_error,
+		uint8_t *error_adc_device_id
+)
+{
+	ErrorCode_t result;
+	uint32_t pending_mask = (1UL << AD4130_DEVICE_COUNT) - 1UL;
+	uint8_t status;
+
+	if (error_adc_device_id == NULL)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	while (pending_mask != 0U)
+	{
+		for (
+				uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+				adc_device_id <= AD4130_DEVICE_ID_MAX;
+				adc_device_id++
+		)
+		{
+			uint32_t device_mask = 1UL << (adc_device_id-1U);
+
+			if ((pending_mask & device_mask) == 0U)
+			{
+				continue;
+			}
+
+			result = AD4130_Read_8_Bit(
+					adc_device_id,
+					AD4130_STATUS,
+					&status
+			);
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				return result;
+			}
+			/* Bit 7: RDYB */
+			if ((status & 0x80U) == 0U)
+			{
+				result = AD4130_Check_Status_Error(adc_device_id, status);
+				if (result != ERROR_CODE_NONE)
+				{
+					*error_adc_device_id = adc_device_id;
+					return result;
+				}
+				pending_mask &= ~device_mask;
+			}
+		}
+
+		if (pending_mask != 0U)
+		{
+			if ((HAL_GetTick()-start_tick) >= timeout_ms)
+			{
+				for (
+						uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+						adc_device_id <= AD4130_DEVICE_ID_MAX;
+						adc_device_id++
+				)
+				{
+					if (
+							(pending_mask
+							& (1UL << (adc_device_id-1U))) != 0U
+					)
+					{
+						*error_adc_device_id = adc_device_id;
+						break;
+					}
+				}
+				return timeout_error;
+			}
+			HAL_Delay(1U);
+		}
+	}
+
+	return ERROR_CODE_NONE;
+}
+
+static ErrorCode_t AD4130_Get_Calibration_Gain_Index(
+		uint8_t gain_config,
+		uint8_t *gain_index
+)
+{
+	if (gain_index == NULL)
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+
+	for (uint8_t i = 0U; i < AD4130_CALIBRATION_GAIN_COUNT; i++)
+	{
+		if (ad4130_calibration_gain_configs[i] == gain_config)
+		{
+			*gain_index = i;
+			return ERROR_CODE_NONE;
+		}
+	}
+
+	return ERROR_CODE_AD4130_ILLEGAL_RANGE;
+}
+
+static ErrorCode_t AD4130_Load_Setup_Calibration(
+		uint8_t adc_device_id,
+		uint8_t setup,
+		uint8_t gain_config
+)
+{
+	ErrorCode_t result;
+	AD4130CalibrationCache_t *calibration;
+	uint8_t gain_index;
+	uint8_t tx[3] = {0};
+
+	result = AD4130_Get_Calibration_Gain_Index(gain_config, &gain_index);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 
-	while (1)
+	calibration = &ad4130_calibration_cache
+			[adc_device_id-1U][gain_index];
+	if (calibration->valid == 0U)
 	{
-		result = AD4130_Read_8_Bit(adc_device_id, AD4130_STATUS, &status);
-		if (result != ERROR_CODE_NONE)
-		{
-			return result;
-		}
-		if ((status & 0x80U) == 0U)
-		{
-			return AD4130_Check_Status_Error(adc_device_id, status);
-		}
-		HAL_Delay(1U);
-	}
-}
-
-ErrorCode_t AD4130_Internal_Calibrate(
-		uint8_t adc_device_id,
-		uint8_t channel,
-		uint8_t *setup_value,
-		uint32_t *gain_value,
-		uint32_t *offset_value
-)
-{
-	ErrorCode_t result;
-	ErrorCode_t restore_result;
-	uint32_t channel_values[AD4130_SENSOR_CHANNEL_COUNT] = {0};
-	uint32_t calibrated_gain = 0U;
-	uint32_t calibrated_offset = 0U;
-	uint32_t offset_default = 0x800000U;
-	uint8_t setup;
-	uint8_t tx[3] = {0};
-
-	if (
-			(channel >= AD4130_SENSOR_CHANNEL_COUNT)
-			|| (setup_value == NULL)
-			|| (gain_value == NULL)
-			|| (offset_value == NULL)
-	)
-	{
-		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
-	}
-	*setup_value = 0xFFU;
-	*gain_value = 0U;
-	*offset_value = 0U;
-
-	for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
-	{
-		result = AD4130_Read_24_Bit(
-				adc_device_id,
-				(uint8_t) (AD4130_CHANNEL_0+i),
-				&channel_values[i]
-		);
-		if (result != ERROR_CODE_NONE)
-		{
-			return result;
-		}
+		return ERROR_CODE_NONE;
 	}
 
-	if ((channel_values[channel] & 0x800000U) == 0U)
-	{
-		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
-	}
-
-	for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
-	{
-		uint32_t channel_value = channel_values[i];
-
-		if (i != channel)
-		{
-			channel_value &= 0x7FFFFFU;
-		}
-		tx[0] = (channel_value >> 16) & 0xFFU;
-		tx[1] = (channel_value >> 8) & 0xFFU;
-		tx[2] = channel_value & 0xFFU;
-		result = AD4130_Write(
-				adc_device_id,
-				(uint8_t) (AD4130_CHANNEL_0+i),
-				tx,
-				3U
-		);
-		if (result != ERROR_CODE_NONE)
-		{
-			return result;
-		}
-	}
-
-	setup = (channel_values[channel] >> 20) & 0x07U;
-	tx[0] = (offset_default >> 16) & 0xFFU;
-	tx[1] = (offset_default >> 8) & 0xFFU;
-	tx[2] = offset_default & 0xFFU;
+	tx[0] = (calibration->gain_value >> 16) & 0xFFU;
+	tx[1] = (calibration->gain_value >> 8) & 0xFFU;
+	tx[2] = calibration->gain_value & 0xFFU;
 	result = AD4130_Write(
+			adc_device_id,
+			(uint8_t) (AD4130_GAIN_0+setup),
+			tx,
+			3U
+	);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+
+	tx[0] = (calibration->offset_value >> 16) & 0xFFU;
+	tx[1] = (calibration->offset_value >> 8) & 0xFFU;
+	tx[2] = calibration->offset_value & 0xFFU;
+	return AD4130_Write(
 			adc_device_id,
 			(uint8_t) (AD4130_OFFSET_0+setup),
 			tx,
 			3U
 	);
-	if (result == ERROR_CODE_NONE)
-	{
-		result = AD4130_Run_Calibration(adc_device_id, 0b0110U);
-	}
-	if (result == ERROR_CODE_NONE)
-	{
-		result = AD4130_Run_Calibration(adc_device_id, 0b0101U);
-	}
-	if (result == ERROR_CODE_NONE)
-	{
-		result = AD4130_Read_24_Bit(
-				adc_device_id,
-				(uint8_t) (AD4130_GAIN_0+setup),
-				&calibrated_gain
-		);
-	}
-	if (result == ERROR_CODE_NONE)
-	{
-		result = AD4130_Read_24_Bit(
-				adc_device_id,
-				(uint8_t) (AD4130_OFFSET_0+setup),
-				&calibrated_offset
-		);
-	}
+}
 
-	for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
+static ErrorCode_t AD4130_Load_All_Setup_Calibrations(
+		uint8_t *error_adc_device_id
+)
+{
+	ErrorCode_t result;
+	uint16_t config_value;
+
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
 	{
-		tx[0] = (channel_values[i] >> 16) & 0xFFU;
-		tx[1] = (channel_values[i] >> 8) & 0xFFU;
-		tx[2] = channel_values[i] & 0xFFU;
-		restore_result = AD4130_Write(
-				adc_device_id,
-				(uint8_t) (AD4130_CHANNEL_0+i),
-				tx,
-				3U
-		);
-		if ((result == ERROR_CODE_NONE) && (restore_result != ERROR_CODE_NONE))
+		for (uint8_t setup = 0U; setup < 8U; setup++)
 		{
-			result = restore_result;
+			result = AD4130_Read_16_Bit(
+					adc_device_id,
+					(uint8_t) (AD4130_CONFIG_0+setup),
+					&config_value
+			);
+			if (result == ERROR_CODE_NONE)
+			{
+				result = AD4130_Load_Setup_Calibration(
+						adc_device_id,
+						setup,
+						(uint8_t) ((config_value >> 1) & 0x07U)
+				);
+			}
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				return result;
+			}
 		}
 	}
 
+	return ERROR_CODE_NONE;
+}
+
+static ErrorCode_t AD4130_Restore_Channels(
+		const uint32_t channel_values
+				[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT],
+		uint8_t *error_adc_device_id
+)
+{
+	ErrorCode_t result;
+	uint8_t tx[3] = {0};
+
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
+	{
+		for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
+		{
+			tx[0] = (channel_values[adc_device_id-1U][i] >> 16) & 0xFFU;
+			tx[1] = (channel_values[adc_device_id-1U][i] >> 8) & 0xFFU;
+			tx[2] = channel_values[adc_device_id-1U][i] & 0xFFU;
+			result = AD4130_Write(
+					adc_device_id,
+					(uint8_t) (AD4130_CHANNEL_0+i),
+					tx,
+					3U
+			);
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				return result;
+			}
+		}
+	}
+
+	return ERROR_CODE_NONE;
+}
+
+ErrorCode_t AD4130_Internal_Calibrate(
+		AD4130CalibrationResult_t results
+				[AD4130_DEVICE_COUNT][AD4130_CALIBRATION_GAIN_COUNT],
+		uint8_t *error_adc_device_id
+)
+{
+	ErrorCode_t result;
+	ErrorCode_t config_restore_result = ERROR_CODE_NONE;
+	ErrorCode_t restore_result;
+	uint32_t calibration_start_tick;
+	uint32_t channel_values
+			[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT] = {0};
+	uint32_t offset_default = 0x800000U;
+	uint16_t config_values[AD4130_DEVICE_COUNT] = {0};
+	uint8_t calibration_setups[AD4130_DEVICE_COUNT] = {0};
+	uint8_t restore_error_adc_device_id = 0U;
+	uint8_t tx[3] = {0};
+
+	if ((results == NULL) || (error_adc_device_id == NULL))
+	{
+		return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+	}
+	*error_adc_device_id = 0U;
+	for (uint8_t adc_index = 0U; adc_index < AD4130_DEVICE_COUNT; adc_index++)
+	{
+		for (
+				uint8_t gain_index = 0U;
+				gain_index < AD4130_CALIBRATION_GAIN_COUNT;
+				gain_index++
+		)
+		{
+			results[adc_index][gain_index].gain = 0U;
+			results[adc_index][gain_index].gain_value = 0U;
+			results[adc_index][gain_index].offset_value = 0U;
+			ad4130_calibration_cache[adc_index][gain_index].valid = 0U;
+		}
+	}
+
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
+	{
+		for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
+		{
+			result = AD4130_Read_24_Bit(
+					adc_device_id,
+					(uint8_t) (AD4130_CHANNEL_0+i),
+					&channel_values[adc_device_id-1U][i]
+			);
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				return result;
+			}
+		}
+
+		if (
+				(channel_values[adc_device_id-1U][0U]
+				& 0x800000U) == 0U
+		)
+		{
+			*error_adc_device_id = adc_device_id;
+			return ERROR_CODE_AD4130_ILLEGAL_PARAM;
+		}
+
+		calibration_setups[adc_device_id-1U] =
+				(channel_values[adc_device_id-1U][0U] >> 20) & 0x07U;
+		result = AD4130_Read_16_Bit(
+				adc_device_id,
+				(uint8_t) (
+						AD4130_CONFIG_0
+						+ calibration_setups[adc_device_id-1U]
+				),
+				&config_values[adc_device_id-1U]
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			*error_adc_device_id = adc_device_id;
+			return result;
+		}
+	}
+
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
+	{
+		for (uint8_t i = 0U; i < AD4130_SENSOR_CHANNEL_COUNT; i++)
+		{
+			uint32_t channel_value = channel_values[adc_device_id-1U][i];
+
+			if (i != 0U)
+			{
+				channel_value &= 0x7FFFFFU;
+			}
+			tx[0] = (channel_value >> 16) & 0xFFU;
+			tx[1] = (channel_value >> 8) & 0xFFU;
+			tx[2] = channel_value & 0xFFU;
+			result = AD4130_Write(
+					adc_device_id,
+					(uint8_t) (AD4130_CHANNEL_0+i),
+					tx,
+					3U
+			);
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				goto restore_channels;
+			}
+		}
+	}
+
+	for (
+			uint8_t gain_index = 0U;
+			gain_index < AD4130_CALIBRATION_GAIN_COUNT;
+			gain_index++
+	)
+	{
+		for (
+				uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+				adc_device_id <= AD4130_DEVICE_ID_MAX;
+				adc_device_id++
+		)
+		{
+			uint16_t config_value = config_values[adc_device_id-1U];
+
+			/* Bits 3-1: PGA_n */
+			config_value &= 0b1111111111110001U;
+			config_value |= (uint16_t)
+					ad4130_calibration_gain_configs[gain_index] << 1;
+			tx[0] = (config_value >> 8) & 0xFFU;
+			tx[1] = config_value & 0xFFU;
+			result = AD4130_Write(
+					adc_device_id,
+					(uint8_t) (
+							AD4130_CONFIG_0
+							+ calibration_setups[adc_device_id-1U]
+					),
+					tx,
+					2U
+			);
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				goto restore_configs;
+			}
+
+			tx[0] = (offset_default >> 16) & 0xFFU;
+			tx[1] = (offset_default >> 8) & 0xFFU;
+			tx[2] = offset_default & 0xFFU;
+			result = AD4130_Write(
+					adc_device_id,
+					(uint8_t) (
+							AD4130_OFFSET_0
+							+ calibration_setups[adc_device_id-1U]
+					),
+					tx,
+					3U
+			);
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				goto restore_configs;
+			}
+		}
+
+		/* start internal gain calibration */
+		calibration_start_tick = HAL_GetTick();
+		for (
+				uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+				adc_device_id <= AD4130_DEVICE_ID_MAX;
+				adc_device_id++
+		)
+		{
+			result = AD4130_Start_Calibration(adc_device_id, 0b0110U);
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				goto restore_configs;
+			}
+		}
+		result = AD4130_Wait_Calibrations(
+				calibration_start_tick,
+				AD4130_GAIN_CALIBRATION_TIMEOUT_MS,
+				ERROR_CODE_AD4130_INTERNAL_GAIN_CALIBRATION_TIMEOUT,
+				error_adc_device_id
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			goto restore_configs;
+		}
+
+		/* start internal offset calibration */
+		calibration_start_tick = HAL_GetTick();
+		for (
+				uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+				adc_device_id <= AD4130_DEVICE_ID_MAX;
+				adc_device_id++
+		)
+		{
+			result = AD4130_Start_Calibration(adc_device_id, 0b0101U);
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				goto restore_configs;
+			}
+		}
+		result = AD4130_Wait_Calibrations(
+				calibration_start_tick,
+				AD4130_OFFSET_CALIBRATION_TIMEOUT_MS,
+				ERROR_CODE_AD4130_INTERNAL_OFFSET_CALIBRATION_TIMEOUT,
+				error_adc_device_id
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			goto restore_configs;
+		}
+
+		for (
+				uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+				adc_device_id <= AD4130_DEVICE_ID_MAX;
+				adc_device_id++
+		)
+		{
+			AD4130CalibrationResult_t *calibration_result =
+					&results[adc_device_id-1U][gain_index];
+			AD4130CalibrationCache_t *calibration_cache =
+					&ad4130_calibration_cache
+							[adc_device_id-1U][gain_index];
+
+			calibration_result->gain =
+					(uint16_t) (1U << (gain_index+3U));
+			result = AD4130_Read_24_Bit(
+					adc_device_id,
+					(uint8_t) (
+							AD4130_GAIN_0
+							+ calibration_setups[adc_device_id-1U]
+					),
+					&calibration_result->gain_value
+			);
+			if (result == ERROR_CODE_NONE)
+			{
+				result = AD4130_Read_24_Bit(
+						adc_device_id,
+						(uint8_t) (
+								AD4130_OFFSET_0
+								+ calibration_setups[adc_device_id-1U]
+						),
+						&calibration_result->offset_value
+				);
+			}
+			if (result != ERROR_CODE_NONE)
+			{
+				*error_adc_device_id = adc_device_id;
+				goto restore_configs;
+			}
+
+			calibration_cache->gain_value =
+					calibration_result->gain_value;
+			calibration_cache->offset_value =
+					calibration_result->offset_value;
+			calibration_cache->valid = 1U;
+		}
+	}
+
+restore_configs:
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
+	{
+		tx[0] = (config_values[adc_device_id-1U] >> 8) & 0xFFU;
+		tx[1] = config_values[adc_device_id-1U] & 0xFFU;
+		config_restore_result = AD4130_Write(
+				adc_device_id,
+				(uint8_t) (
+						AD4130_CONFIG_0
+						+ calibration_setups[adc_device_id-1U]
+				),
+				tx,
+				2U
+		);
+		if (config_restore_result != ERROR_CODE_NONE)
+		{
+			restore_error_adc_device_id = adc_device_id;
+			break;
+		}
+	}
+
+restore_channels:
+	restore_result = AD4130_Restore_Channels(
+			channel_values,
+			&restore_error_adc_device_id
+	);
+	if (
+			(result == ERROR_CODE_NONE)
+			&& (config_restore_result != ERROR_CODE_NONE)
+	)
+	{
+		result = config_restore_result;
+		*error_adc_device_id = restore_error_adc_device_id;
+	}
+	else if ((result == ERROR_CODE_NONE) && (restore_result != ERROR_CODE_NONE))
+	{
+		result = restore_result;
+		*error_adc_device_id = restore_error_adc_device_id;
+	}
 	if (result == ERROR_CODE_NONE)
 	{
-		*setup_value = setup;
-		*gain_value = calibrated_gain;
-		*offset_value = calibrated_offset;
+		result = AD4130_Load_All_Setup_Calibrations(error_adc_device_id);
 	}
 
 	return result;
@@ -971,7 +1411,12 @@ ErrorCode_t AD4130_Set_Range(
 )
 {
 	ErrorCode_t result;
+	ErrorCode_t range_result;
+	uint32_t channel_value;
 	uint16_t config_value;
+	uint16_t original_config_value;
+	uint8_t original_gain_config;
+	uint8_t setup;
 	uint8_t tx[2] = {0};
 
 	if (
@@ -990,15 +1435,28 @@ ErrorCode_t AD4130_Set_Range(
 		return ERROR_CODE_AD4130_ILLEGAL_RANGE;
 	}
 
+	result = AD4130_Read_24_Bit(
+			adc_device_id,
+			(uint8_t) (AD4130_CHANNEL_0+channel),
+			&channel_value
+	);
+	if (result != ERROR_CODE_NONE)
+	{
+		return result;
+	}
+	setup = (channel_value >> 20) & 0x07U;
+
 	result = AD4130_Read_16_Bit(
 			adc_device_id,
-			(uint8_t) (AD4130_CONFIG_0+channel),
+			(uint8_t) (AD4130_CONFIG_0+setup),
 			&config_value
 	);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
+	original_config_value = config_value;
+	original_gain_config = (config_value >> 1) & 0x07U;
 
 	/* Bits 12-10,3-1: I_OUT0_n,PGA_n */
 	config_value &= 0b1110001111110001U;
@@ -1012,16 +1470,50 @@ ErrorCode_t AD4130_Set_Range(
 
 	result = AD4130_Write(
 			adc_device_id,
-			(uint8_t) (AD4130_CONFIG_0+channel),
+			(uint8_t) (AD4130_CONFIG_0+setup),
 			tx,
 			2U
 	);
 	if (result == ERROR_CODE_NONE)
 	{
-		ad4130_ranges[adc_device_id-1U][channel] = range;
+		result = AD4130_Load_Setup_Calibration(
+				adc_device_id,
+				setup,
+				ad4130_range_configs[range].gain_config
+		);
+	}
+	if (result != ERROR_CODE_NONE)
+	{
+		range_result = result;
+		tx[0] = (original_config_value >> 8) & 0xFFU;
+		tx[1] = original_config_value & 0xFFU;
+		result = AD4130_Write(
+				adc_device_id,
+				(uint8_t) (AD4130_CONFIG_0+setup),
+				tx,
+				2U
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			return result;
+		}
+
+		result = AD4130_Load_Setup_Calibration(
+				adc_device_id,
+				setup,
+				original_gain_config
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			return result;
+		}
+
+		return range_result;
 	}
 
-	return result;
+	ad4130_ranges[adc_device_id-1U][channel] = range;
+
+	return ERROR_CODE_NONE;
 }
 
 /* ------------------------------------------------------------------------ */

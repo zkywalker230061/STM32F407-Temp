@@ -22,6 +22,15 @@ typedef struct
 
 typedef struct
 {
+	uint16_t gain;
+	uint32_t gain_value;
+	uint32_t offset_value;
+} AD4130CalibrationResult_t;
+
+#define AD4130_CALIBRATION_GAIN_COUNT  5U
+
+typedef struct
+{
 	uint8_t header;
 	uint32_t data;
 } AD4130FIFOSample_t;
@@ -172,11 +181,9 @@ ErrorCode_t AD4130_Write(
 );
 ErrorCode_t AD4130_Reset(uint8_t adc_device_id);
 ErrorCode_t AD4130_Internal_Calibrate(
-		uint8_t adc_device_id,
-		uint8_t channel,
-		uint8_t *setup_value,
-		uint32_t *gain_value,
-		uint32_t *offset_value
+		AD4130CalibrationResult_t results
+				[AD4130_DEVICE_COUNT][AD4130_CALIBRATION_GAIN_COUNT],
+		uint8_t *error_adc_device_id
 );
 
 /* ------------------------------------------------------------------------ */
