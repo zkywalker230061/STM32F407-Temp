@@ -139,7 +139,7 @@ static ErrorCode_t initialize_once(void)
 	{
 		result = AD4130_Channel_0(
 				adc_device_id,
-				AD4130_RANGE_10UA_GAIN_64
+				AD4130_RANGE_10UA_GAIN_8
 		);
 		if (result != ERROR_CODE_NONE)
 		{
@@ -153,7 +153,7 @@ static ErrorCode_t initialize_once(void)
 
 		result = AD4130_Channel_1(
 				adc_device_id,
-				AD4130_RANGE_10UA_GAIN_64
+				AD4130_RANGE_10UA_GAIN_8
 		);
 		if (result != ERROR_CODE_NONE)
 		{
@@ -167,7 +167,7 @@ static ErrorCode_t initialize_once(void)
 
 //		result = AD4130_Channel_2(
 //				adc_device_id,
-//				AD4130_RANGE_10UA_GAIN_64
+//				AD4130_RANGE_10UA_GAIN_8
 //		);
 //		if (result != ERROR_CODE_NONE)
 //		{
@@ -181,7 +181,7 @@ static ErrorCode_t initialize_once(void)
 //
 //		result = AD4130_Channel_3(
 //				adc_device_id,
-//				AD4130_RANGE_10UA_GAIN_64
+//				AD4130_RANGE_10UA_GAIN_8
 //		);
 //		if (result != ERROR_CODE_NONE)
 //		{
