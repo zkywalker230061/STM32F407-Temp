@@ -19,7 +19,7 @@ typedef enum
 	USB_CDC_FRAME_LOGE,
 	USB_CDC_FRAME_LOGD,
 	USB_CDC_FRAME_NORM,
-	USB_CDC_FRAME_SYNC,
+	USB_CDC_FRAME_STAD,
 	USB_CDC_FRAME_FAST,
 	USB_CDC_FRAME_MRTU,
 	USB_CDC_FRAME_MTCP,
@@ -162,7 +162,7 @@ ErrorCode_t USB_CDC_Receive(const uint8_t *data, uint32_t length)
 			return ERROR_CODE_NONE;
 		}
 
-		if (usb_cdc_frame == USB_CDC_FRAME_SYNC)
+		if (usb_cdc_frame == USB_CDC_FRAME_STAD)
 		{
 			USB_CDC_Reset_Frame();
 			if (data_index < length)
@@ -170,7 +170,7 @@ ErrorCode_t USB_CDC_Receive(const uint8_t *data, uint32_t length)
 				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
 				return usb_cdc_receive_error;
 			}
-			usb_cdc_command = USB_CDC_COMMAND_SYNC;
+			usb_cdc_command = USB_CDC_COMMAND_STAD;
 			return ERROR_CODE_NONE;
 		}
 
@@ -314,12 +314,12 @@ static ErrorCode_t USB_CDC_Identify_Frame(void)
 
 	if (
 			(usb_cdc_magic[0] == 'S')
-			&& (usb_cdc_magic[1] == 'Y')
-			&& (usb_cdc_magic[2] == 'N')
-			&& (usb_cdc_magic[3] == 'C')
+			&& (usb_cdc_magic[1] == 'T')
+			&& (usb_cdc_magic[2] == 'A')
+			&& (usb_cdc_magic[3] == 'D')
 	)
 	{
-		usb_cdc_frame = USB_CDC_FRAME_SYNC;
+		usb_cdc_frame = USB_CDC_FRAME_STAD;
 		return ERROR_CODE_NONE;
 	}
 

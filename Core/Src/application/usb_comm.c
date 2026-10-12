@@ -138,7 +138,7 @@ ErrorCode_t usb_comm_process(void)
 			if (command_result != ERROR_CODE_NONE)
 			{
 				printf(
-						"%d: Measurement mode change to NORMAL error\r\n",
+						"%d: Measurement mode change to NORM error\r\n",
 						(int) command_result
 				);
 				return command_result;
@@ -147,21 +147,21 @@ ErrorCode_t usb_comm_process(void)
 			break;
 		}
 
-		case USB_CDC_COMMAND_SYNC:
+		case USB_CDC_COMMAND_STAD:
 		{
 			command_result = system_config_set_measurement_mode(
-					SYSTEM_MEASUREMENT_MODE_SYNC
+					SYSTEM_MEASUREMENT_MODE_STANDARD
 			);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			if (command_result != ERROR_CODE_NONE)
 			{
 				printf(
-						"%d: Measurement mode change to SYNC error\r\n",
+						"%d: Measurement mode change to STAD error\r\n",
 						(int) command_result
 				);
 				return command_result;
 			}
-			printf("command - measurement mode SYNC\r\n");
+			printf("command - measurement mode STAD\r\n");
 			break;
 		}
 

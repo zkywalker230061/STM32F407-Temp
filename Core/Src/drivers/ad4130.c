@@ -1674,7 +1674,8 @@ ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode)
 
 	if (
 			(mode != AD4130_CONVERSION_MODE_NORMAL)
-			&& (mode != AD4130_CONVERSION_MODE_SYNC)
+			&& (mode != AD4130_CONVERSION_MODE_STANDARD)
+			&& (mode != AD4130_CONVERSION_MODE_FAST)
 	)
 	{
 		return ERROR_CODE_AD4130_ILLEGAL_PARAM;

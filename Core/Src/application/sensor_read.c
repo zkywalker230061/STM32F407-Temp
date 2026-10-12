@@ -39,7 +39,10 @@ ErrorCode_t read_sensor(void)
 	uint8_t read_count = 0U;
 
 	measurement_mode = system_config_get_measurement_mode();
-	synchronized = (measurement_mode == SYSTEM_MEASUREMENT_MODE_SYNC) ? 1U : 0U;
+	synchronized = (
+			(measurement_mode == SYSTEM_MEASUREMENT_MODE_NORMAL)
+			|| (measurement_mode == SYSTEM_MEASUREMENT_MODE_STANDARD)
+	) ? 1U : 0U;
 	if ((synchronized != 0U) && (synchronized_conversion_active == 0U))
 	{
 		/* ad4130: start synchronized sequence */

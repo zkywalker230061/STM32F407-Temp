@@ -105,8 +105,8 @@ static ErrorCode_t set_measurement_mode(
 			new_filter = AD4130_FILTER_POST_FILTER_3;
 			break;
 
-		case SYSTEM_MEASUREMENT_MODE_SYNC:
-			new_conversion_mode = AD4130_CONVERSION_MODE_SYNC;
+		case SYSTEM_MEASUREMENT_MODE_STANDARD:
+			new_conversion_mode = AD4130_CONVERSION_MODE_STANDARD;
 			new_filter = AD4130_FILTER_POST_FILTER_3;
 			break;
 
@@ -139,8 +139,8 @@ static ErrorCode_t set_measurement_mode(
 			previous_filter = AD4130_FILTER_POST_FILTER_3;
 			break;
 
-		case SYSTEM_MEASUREMENT_MODE_SYNC:
-			previous_conversion_mode = AD4130_CONVERSION_MODE_SYNC;
+		case SYSTEM_MEASUREMENT_MODE_STANDARD:
+			previous_conversion_mode = AD4130_CONVERSION_MODE_STANDARD;
 			previous_filter = AD4130_FILTER_POST_FILTER_3;
 			break;
 
