@@ -187,33 +187,33 @@ static ErrorCode_t initialize_once(void)
 			return result;
 		}
 
-//		result = AD4130_Channel_2(
-//				adc_device_id,
-//				AD4130_RANGE_10UA_GAIN_8
-//		);
-//		if (result != ERROR_CODE_NONE)
-//		{
-//			printf(
-//					"%d: ADC %u CHANNEL_2 setup error\r\n",
-//					(int) result,
-//					(unsigned int) adc_device_id
-//			);
-//			return result;
-//		}
-//
-//		result = AD4130_Channel_3(
-//				adc_device_id,
-//				AD4130_RANGE_10UA_GAIN_8
-//		);
-//		if (result != ERROR_CODE_NONE)
-//		{
-//			printf(
-//					"%d: ADC %u CHANNEL_3 setup error\r\n",
-//					(int) result,
-//					(unsigned int) adc_device_id
-//			);
-//			return result;
-//		}
+		result = AD4130_Channel_2(
+				adc_device_id,
+				AD4130_RANGE_10UA_GAIN_8
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			printf(
+					"%d: ADC %u CHANNEL_2 setup error\r\n",
+					(int) result,
+					(unsigned int) adc_device_id
+			);
+			return result;
+		}
+
+		result = AD4130_Channel_3(
+				adc_device_id,
+				AD4130_RANGE_10UA_GAIN_8
+		);
+		if (result != ERROR_CODE_NONE)
+		{
+			printf(
+					"%d: ADC %u CHANNEL_3 setup error\r\n",
+					(int) result,
+					(unsigned int) adc_device_id
+			);
+			return result;
+		}
 
 	}
 
