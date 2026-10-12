@@ -1,6 +1,7 @@
 #include "common/system_config.h"
 
 #include "drivers/ad4130.h"
+#include "application/sensor_adc.h"
 #include "application/sensor_read.h"
 
 
@@ -24,6 +25,11 @@ static SystemConfig_t system_config = {
 	.measurement_log_enabled = 0U,
 	.measurement_mode = SYSTEM_MEASUREMENT_MODE_NORMAL
 };
+
+static ErrorCode_t set_measurement_mode(
+		SystemMeasurementMode_t mode,
+		uint8_t force
+);
 
 
 SystemCommunicationMode_t system_config_get_communication_mode(void)
@@ -56,7 +62,7 @@ ModbusRTUParity_t system_config_get_modbus_rtu_parity(void)
 	return system_config.modbus_rtu_parity;
 }
 
-uint8_t system_config_measurement_log_enabled(void)
+uint8_t system_config_get_measurement_log_enabled(void)
 {
 	return system_config.measurement_log_enabled;
 }
@@ -72,6 +78,19 @@ SystemMeasurementMode_t system_config_get_measurement_mode(void)
 }
 
 ErrorCode_t system_config_set_measurement_mode(SystemMeasurementMode_t mode)
+{
+	return set_measurement_mode(mode, 0U);
+}
+
+ErrorCode_t system_config_apply_current_measurement_mode(void)
+{
+	return set_measurement_mode(system_config.measurement_mode, 1U);
+}
+
+static ErrorCode_t set_measurement_mode(
+		SystemMeasurementMode_t mode,
+		uint8_t force
+)
 {
 	ErrorCode_t result;
 	uint8_t previous_conversion_mode;
@@ -100,8 +119,16 @@ ErrorCode_t system_config_set_measurement_mode(SystemMeasurementMode_t mode)
 			return ERROR_CODE_SYSTEM_CONFIG_UNSUPPORTED_MODE;
 	}
 
-	if (mode == system_config.measurement_mode)
+	if ((force == 0U) && (mode == system_config.measurement_mode))
 	{
+		return ERROR_CODE_NONE;
+	}
+
+	/* sensor_adc: check initialization state */
+	if ((force == 0U) && (sensor_adc_is_initialized() == 0U))
+	{
+		system_config.measurement_mode = mode;
+		sensor_read_reset_synchronized_conversion();
 		return ERROR_CODE_NONE;
 	}
 

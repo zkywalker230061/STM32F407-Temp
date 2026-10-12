@@ -63,7 +63,7 @@ ErrorCode_t usb_comm_process(void)
 		case USB_CDC_COMMAND_RSET:
 		{
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			printf("System reset\r\n");
+			printf("command - system reset\r\n");
 			usb_comm_reset_pending = 1U;
 			command_result = ERROR_CODE_NONE;
 			break;
@@ -83,7 +83,7 @@ ErrorCode_t usb_comm_process(void)
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			if (coeffs_result == ERROR_CODE_NONE)
 			{
-				printf("Sensor coefficients updated\r\n");
+				printf("command - sensor coefficients updated\r\n");
 				usb_comm_reset_pending = 1U;
 				command_result = ERROR_CODE_NONE;
 				break;
@@ -105,7 +105,7 @@ ErrorCode_t usb_comm_process(void)
 				);
 				return storage_result;
 			}
-			printf("Sensor coefficients cleared\r\n");
+			printf("command - sensor coefficients cleared\r\n");
 			usb_comm_reset_pending = 1U;
 			command_result = ERROR_CODE_NONE;
 			break;
@@ -115,7 +115,7 @@ ErrorCode_t usb_comm_process(void)
 		{
 			system_config_set_measurement_log_enabled(1U);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			printf("Measurement log enabled\r\n");
+			printf("command - measurement log enabled\r\n");
 			command_result = ERROR_CODE_NONE;
 			break;
 		}
@@ -124,7 +124,7 @@ ErrorCode_t usb_comm_process(void)
 		{
 			system_config_set_measurement_log_enabled(0U);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			printf("Measurement log disabled\r\n");
+			printf("command - measurement log disabled\r\n");
 			command_result = ERROR_CODE_NONE;
 			break;
 		}
@@ -143,7 +143,7 @@ ErrorCode_t usb_comm_process(void)
 				);
 				return command_result;
 			}
-			printf("Measurement mode changed to NORMAL\r\n");
+			printf("command - measurement mode NORM\r\n");
 			break;
 		}
 
@@ -161,7 +161,7 @@ ErrorCode_t usb_comm_process(void)
 				);
 				return command_result;
 			}
-			printf("Measurement mode changed to SYNC\r\n");
+			printf("command - measurement mode SYNC\r\n");
 			break;
 		}
 
@@ -179,7 +179,7 @@ ErrorCode_t usb_comm_process(void)
 				);
 				return command_result;
 			}
-			printf("Measurement mode changed to FAST\r\n");
+			printf("command - measurement mode FAST\r\n");
 			break;
 		}
 
@@ -197,7 +197,7 @@ ErrorCode_t usb_comm_process(void)
 				);
 				return command_result;
 			}
-			printf("Modbus RTU mode selected\r\n");
+			printf("command - Modbus RTU selected\r\n");
 			break;
 		}
 
@@ -215,7 +215,7 @@ ErrorCode_t usb_comm_process(void)
 				);
 				return command_result;
 			}
-			printf("Modbus TCP mode selected\r\n");
+			printf("command - Modbus TCP selected\r\n");
 			break;
 		}
 
@@ -233,7 +233,7 @@ ErrorCode_t usb_comm_process(void)
 				);
 				return command_result;
 			}
-			printf("PROFIBUS mode selected\r\n");
+			printf("command - PROFIBUS selected\r\n");
 			break;
 		}
 

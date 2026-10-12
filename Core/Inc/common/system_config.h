@@ -44,13 +44,15 @@ uint32_t system_config_get_modbus_rtu_baud_rate(void);
 
 ModbusRTUParity_t system_config_get_modbus_rtu_parity(void);
 
-uint8_t system_config_measurement_log_enabled(void);
+uint8_t system_config_get_measurement_log_enabled(void);
 
 void system_config_set_measurement_log_enabled(uint8_t enabled);
 
 SystemMeasurementMode_t system_config_get_measurement_mode(void);
 
 ErrorCode_t system_config_set_measurement_mode(SystemMeasurementMode_t mode);
+
+ErrorCode_t system_config_apply_current_measurement_mode(void);
 
 #ifdef __cplusplus
 }

@@ -238,7 +238,7 @@ ErrorCode_t read_sensor(void)
 			read_count++;
 
 			/* usb comm measurement log */
-			if (system_config_measurement_log_enabled() != 0U)
+			if (system_config_get_measurement_log_enabled() != 0U)
 			{
 				printf(
 						"%u-%u: R-%.4f ohm, T-%.5f K\r\n",

@@ -123,10 +123,7 @@ int main(void)
 	/* sensor_adc: ADC initialize */
 	adc_result = sensor_adc_initialize();
 	(void) usb_comm_process();
-	if (
-			(adc_result != ERROR_CODE_NONE)
-			&& (adc_result != ERROR_CODE_MEASUREMENT_STATUS_POR)
-	)
+	if (adc_result != ERROR_CODE_NONE)
 	{
 		Error_Handler();
 	}
@@ -144,7 +141,7 @@ int main(void)
 		Error_Handler();
 	}
 
-	/* Industrial communication initialize */
+	/* industrial communication initialize */
 	communication_result = communication_select_initialize();
 	(void) usb_comm_process();
 	if (communication_result != ERROR_CODE_NONE)
@@ -173,7 +170,7 @@ int main(void)
 			Error_Handler();
 		}
 
-		/* Industrial communication process */
+		/* industrial communication process */
 		communication_result = communication_select_process();
 		if (communication_result != ERROR_CODE_NONE)
 		{

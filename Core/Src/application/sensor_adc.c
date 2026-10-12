@@ -5,6 +5,7 @@
 #include "stm32f4xx_hal.h"
 
 #include "common/ad4130_config_file.h"
+#include "common/system_config.h"
 #include "drivers/ad4130.h"
 #include "application/usb_comm.h"
 
@@ -12,12 +13,16 @@
 #define SENSOR_ADC_INITIALIZE_RETRY_COUNT     3U
 #define SENSOR_ADC_INITIALIZE_RETRY_DELAY_MS  100U
 
+static uint8_t sensor_adc_initialized;
+
 static ErrorCode_t initialize_once(void);
 
 
 ErrorCode_t sensor_adc_initialize(void)
 {
 	ErrorCode_t result;
+
+	sensor_adc_initialized = 0U;
 
 	/* initialize adc */
 	result = initialize_once();
@@ -27,7 +32,14 @@ ErrorCode_t sensor_adc_initialize(void)
 			|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
 	)
 	{
-		return result;
+		result = system_config_apply_current_measurement_mode();
+		if (result == ERROR_CODE_NONE)
+		{
+			sensor_adc_initialized = 1U;
+			printf("initialized - ADC(s)\r\n");
+			return ERROR_CODE_NONE;
+		}
+		printf("%d: ADC measurement mode setup error\r\n", (int) result);
 	}
 
 	/* error - retry initialize */
@@ -45,11 +57,18 @@ ErrorCode_t sensor_adc_initialize(void)
 				|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
 		)
 		{
-			printf(
-					"ADC initialization recovered after %u retries\r\n",
-					(unsigned int) (retry+1U)
-			);
-			return result;
+			result = system_config_apply_current_measurement_mode();
+			if (result == ERROR_CODE_NONE)
+			{
+				sensor_adc_initialized = 1U;
+				printf("initialized - ADC(s)\r\n");
+				printf(
+						"ADC initialization recovered after %u retries\r\n",
+						(unsigned int) (retry+1U)
+				);
+				return ERROR_CODE_NONE;
+			}
+			printf("%d: ADC measurement mode setup error\r\n", (int) result);
 		}
 	}
 
@@ -60,6 +79,11 @@ ErrorCode_t sensor_adc_initialize(void)
 	);
 
 	return result;
+}
+
+uint8_t sensor_adc_is_initialized(void)
+{
+	return sensor_adc_initialized;
 }
 
 static ErrorCode_t initialize_once(void)
@@ -233,45 +257,6 @@ static ErrorCode_t initialize_once(void)
 			);
 		}
 	}
-
-	for (
-			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
-			adc_device_id <= AD4130_DEVICE_ID_MAX;
-			adc_device_id++
-	)
-	{
-		/* ad4130: enable FIFO */
-		result = AD4130_FIFO_Enable(
-				adc_device_id,
-				AD4130_SENSOR_CHANNEL_COUNT
-		);
-		if (result != ERROR_CODE_NONE)
-		{
-			printf(
-					"%d: ADC %u FIFO setup error\r\n",
-					(int) result,
-					(unsigned int) adc_device_id
-			);
-			return result;
-		}
-
-		/* ad4130: set conversion mode */
-		result = AD4130_Set_Conversion_Mode(
-				adc_device_id,
-				AD4130_CONVERSION_MODE_NORMAL
-		);
-		if (result != ERROR_CODE_NONE)
-		{
-			printf(
-					"%d: ADC %u conversion mode setup error\r\n",
-					(int) result,
-					(unsigned int) adc_device_id
-			);
-			return result;
-		}
-	}
-
-	printf("initialized - ADC(s)\r\n");
 
 	if (por_detected != 0U)
 	{

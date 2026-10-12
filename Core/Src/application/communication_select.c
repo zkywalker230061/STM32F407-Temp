@@ -32,7 +32,7 @@ ErrorCode_t communication_select_initialize(void)
 	if (result != ERROR_CODE_NONE)
 	{
 		printf(
-				"%d: Industrial communication initialize error\r\n",
+				"%d: Industrial communication initialization error\r\n",
 				(int) result
 		);
 		return result;
