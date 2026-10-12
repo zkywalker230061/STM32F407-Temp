@@ -111,60 +111,6 @@ ErrorCode_t usb_comm_process(void)
 			break;
 		}
 
-		case USB_CDC_COMMAND_MRTU:
-		{
-			command_result = communication_select_mode(
-					SYSTEM_COMMUNICATION_MODE_MODBUS_RTU
-			);
-			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			if (command_result != ERROR_CODE_NONE)
-			{
-				printf(
-						"%d: Modbus RTU mode selection error\r\n",
-						(int) command_result
-				);
-				return command_result;
-			}
-			printf("Modbus RTU mode selected\r\n");
-			break;
-		}
-
-		case USB_CDC_COMMAND_MTCP:
-		{
-			command_result = communication_select_mode(
-					SYSTEM_COMMUNICATION_MODE_MODBUS_TCP
-			);
-			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			if (command_result != ERROR_CODE_NONE)
-			{
-				printf(
-						"%d: Modbus TCP mode selection error\r\n",
-						(int) command_result
-				);
-				return command_result;
-			}
-			printf("Modbus TCP mode selected\r\n");
-			break;
-		}
-
-		case USB_CDC_COMMAND_PBUS:
-		{
-			command_result = communication_select_mode(
-					SYSTEM_COMMUNICATION_MODE_PROFIBUS
-			);
-			usb_cdc_command = USB_CDC_COMMAND_NONE;
-			if (command_result != ERROR_CODE_NONE)
-			{
-				printf(
-						"%d: PROFIBUS mode selection error\r\n",
-						(int) command_result
-				);
-				return command_result;
-			}
-			printf("PROFIBUS mode selected\r\n");
-			break;
-		}
-
 		case USB_CDC_COMMAND_LOGE:
 		{
 			system_config_set_measurement_log_enabled(1U);
@@ -234,6 +180,60 @@ ErrorCode_t usb_comm_process(void)
 				return command_result;
 			}
 			printf("Measurement mode changed to FAST\r\n");
+			break;
+		}
+
+		case USB_CDC_COMMAND_MRTU:
+		{
+			command_result = communication_select_mode(
+					SYSTEM_COMMUNICATION_MODE_MODBUS_RTU
+			);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: Modbus RTU mode selection error\r\n",
+						(int) command_result
+				);
+				return command_result;
+			}
+			printf("Modbus RTU mode selected\r\n");
+			break;
+		}
+
+		case USB_CDC_COMMAND_MTCP:
+		{
+			command_result = communication_select_mode(
+					SYSTEM_COMMUNICATION_MODE_MODBUS_TCP
+			);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: Modbus TCP mode selection error\r\n",
+						(int) command_result
+				);
+				return command_result;
+			}
+			printf("Modbus TCP mode selected\r\n");
+			break;
+		}
+
+		case USB_CDC_COMMAND_PBUS:
+		{
+			command_result = communication_select_mode(
+					SYSTEM_COMMUNICATION_MODE_PROFIBUS
+			);
+			usb_cdc_command = USB_CDC_COMMAND_NONE;
+			if (command_result != ERROR_CODE_NONE)
+			{
+				printf(
+						"%d: PROFIBUS mode selection error\r\n",
+						(int) command_result
+				);
+				return command_result;
+			}
+			printf("PROFIBUS mode selected\r\n");
 			break;
 		}
 

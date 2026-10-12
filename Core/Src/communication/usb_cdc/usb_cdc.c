@@ -16,14 +16,14 @@ typedef enum
 	USB_CDC_FRAME_RSET,
 	USB_CDC_FRAME_SCUP,
 	USB_CDC_FRAME_CRSC,
-	USB_CDC_FRAME_MRTU,
-	USB_CDC_FRAME_MTCP,
-	USB_CDC_FRAME_PBUS,
 	USB_CDC_FRAME_LOGE,
 	USB_CDC_FRAME_LOGD,
 	USB_CDC_FRAME_NORM,
 	USB_CDC_FRAME_SYNC,
-	USB_CDC_FRAME_FAST
+	USB_CDC_FRAME_FAST,
+	USB_CDC_FRAME_MRTU,
+	USB_CDC_FRAME_MTCP,
+	USB_CDC_FRAME_PBUS
 } USB_CDC_Frame_t;
 
 static uint8_t usb_cdc_magic[USB_CDC_MAGIC_SIZE];
@@ -126,42 +126,6 @@ ErrorCode_t USB_CDC_Receive(const uint8_t *data, uint32_t length)
 			return ERROR_CODE_NONE;
 		}
 
-		if (usb_cdc_frame == USB_CDC_FRAME_MRTU)
-		{
-			USB_CDC_Reset_Frame();
-			if (data_index < length)
-			{
-				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
-				return usb_cdc_receive_error;
-			}
-			usb_cdc_command = USB_CDC_COMMAND_MRTU;
-			return ERROR_CODE_NONE;
-		}
-
-		if (usb_cdc_frame == USB_CDC_FRAME_MTCP)
-		{
-			USB_CDC_Reset_Frame();
-			if (data_index < length)
-			{
-				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
-				return usb_cdc_receive_error;
-			}
-			usb_cdc_command = USB_CDC_COMMAND_MTCP;
-			return ERROR_CODE_NONE;
-		}
-
-		if (usb_cdc_frame == USB_CDC_FRAME_PBUS)
-		{
-			USB_CDC_Reset_Frame();
-			if (data_index < length)
-			{
-				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
-				return usb_cdc_receive_error;
-			}
-			usb_cdc_command = USB_CDC_COMMAND_PBUS;
-			return ERROR_CODE_NONE;
-		}
-
 		if (usb_cdc_frame == USB_CDC_FRAME_LOGE)
 		{
 			USB_CDC_Reset_Frame();
@@ -219,6 +183,42 @@ ErrorCode_t USB_CDC_Receive(const uint8_t *data, uint32_t length)
 				return usb_cdc_receive_error;
 			}
 			usb_cdc_command = USB_CDC_COMMAND_FAST;
+			return ERROR_CODE_NONE;
+		}
+
+		if (usb_cdc_frame == USB_CDC_FRAME_MRTU)
+		{
+			USB_CDC_Reset_Frame();
+			if (data_index < length)
+			{
+				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
+				return usb_cdc_receive_error;
+			}
+			usb_cdc_command = USB_CDC_COMMAND_MRTU;
+			return ERROR_CODE_NONE;
+		}
+
+		if (usb_cdc_frame == USB_CDC_FRAME_MTCP)
+		{
+			USB_CDC_Reset_Frame();
+			if (data_index < length)
+			{
+				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
+				return usb_cdc_receive_error;
+			}
+			usb_cdc_command = USB_CDC_COMMAND_MTCP;
+			return ERROR_CODE_NONE;
+		}
+
+		if (usb_cdc_frame == USB_CDC_FRAME_PBUS)
+		{
+			USB_CDC_Reset_Frame();
+			if (data_index < length)
+			{
+				usb_cdc_receive_error = ERROR_CODE_USB_CDC_ILLEGAL_LENGTH;
+				return usb_cdc_receive_error;
+			}
+			usb_cdc_command = USB_CDC_COMMAND_PBUS;
 			return ERROR_CODE_NONE;
 		}
 	}
@@ -280,39 +280,6 @@ static ErrorCode_t USB_CDC_Identify_Frame(void)
 	}
 
 	if (
-			(usb_cdc_magic[0] == 'M')
-			&& (usb_cdc_magic[1] == 'R')
-			&& (usb_cdc_magic[2] == 'T')
-			&& (usb_cdc_magic[3] == 'U')
-	)
-	{
-		usb_cdc_frame = USB_CDC_FRAME_MRTU;
-		return ERROR_CODE_NONE;
-	}
-
-	if (
-			(usb_cdc_magic[0] == 'M')
-			&& (usb_cdc_magic[1] == 'T')
-			&& (usb_cdc_magic[2] == 'C')
-			&& (usb_cdc_magic[3] == 'P')
-	)
-	{
-		usb_cdc_frame = USB_CDC_FRAME_MTCP;
-		return ERROR_CODE_NONE;
-	}
-
-	if (
-			(usb_cdc_magic[0] == 'P')
-			&& (usb_cdc_magic[1] == 'B')
-			&& (usb_cdc_magic[2] == 'U')
-			&& (usb_cdc_magic[3] == 'S')
-	)
-	{
-		usb_cdc_frame = USB_CDC_FRAME_PBUS;
-		return ERROR_CODE_NONE;
-	}
-
-	if (
 			(usb_cdc_magic[0] == 'L')
 			&& (usb_cdc_magic[1] == 'O')
 			&& (usb_cdc_magic[2] == 'G')
@@ -364,6 +331,39 @@ static ErrorCode_t USB_CDC_Identify_Frame(void)
 	)
 	{
 		usb_cdc_frame = USB_CDC_FRAME_FAST;
+		return ERROR_CODE_NONE;
+	}
+
+	if (
+			(usb_cdc_magic[0] == 'M')
+			&& (usb_cdc_magic[1] == 'R')
+			&& (usb_cdc_magic[2] == 'T')
+			&& (usb_cdc_magic[3] == 'U')
+	)
+	{
+		usb_cdc_frame = USB_CDC_FRAME_MRTU;
+		return ERROR_CODE_NONE;
+	}
+
+	if (
+			(usb_cdc_magic[0] == 'M')
+			&& (usb_cdc_magic[1] == 'T')
+			&& (usb_cdc_magic[2] == 'C')
+			&& (usb_cdc_magic[3] == 'P')
+	)
+	{
+		usb_cdc_frame = USB_CDC_FRAME_MTCP;
+		return ERROR_CODE_NONE;
+	}
+
+	if (
+			(usb_cdc_magic[0] == 'P')
+			&& (usb_cdc_magic[1] == 'B')
+			&& (usb_cdc_magic[2] == 'U')
+			&& (usb_cdc_magic[3] == 'S')
+	)
+	{
+		usb_cdc_frame = USB_CDC_FRAME_PBUS;
 		return ERROR_CODE_NONE;
 	}
 
