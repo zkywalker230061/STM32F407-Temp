@@ -1414,8 +1414,8 @@ ErrorCode_t AD4130_Channel_4(uint8_t adc_device_id, AD4130Range_t range)
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_4,SETUP_0,AINP_4(AIN1),AINM_4(AIN0),I_OUT0_CH_4(AIN6) */
-	// channel_4_val = 0b100000000010000000000110;
-	channel_4_val = 0b100000000000000100000110;
+	channel_4_val = 0b100000000010000000000110;
+//	channel_4_val = 0b100000000000000100000110;
 
 	tx[0] = (channel_4_val >> 16) & 0xFFU;
 	tx[1] = (channel_4_val >> 8) & 0xFFU;
@@ -1443,8 +1443,8 @@ ErrorCode_t AD4130_Channel_5(uint8_t adc_device_id, AD4130Range_t range)
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_5,SETUP_1,AINP_5(AIN9),AINM_5(AIN8),I_OUT0_CH_5(AIN7) */
-	// channel_5_val = 0b100100010010100000000111;
-	channel_5_val = 0b100100010000100100000111;
+	channel_5_val = 0b100100010010100000000111;
+//	channel_5_val = 0b100100010000100100000111;
 
 	tx[0] = (channel_5_val >> 16) & 0xFFU;
 	tx[1] = (channel_5_val >> 8) & 0xFFU;
@@ -1472,8 +1472,8 @@ ErrorCode_t AD4130_Channel_6(uint8_t adc_device_id, AD4130Range_t range)
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_6,SETUP_2,AINP_6(AIN12),AINM_6(AIN11),I_OUT0_CH_6(AIN10) */
-	// channel_6_val = 0b101000011000101100001010;
-	channel_6_val = 0b101000010110110000001010;
+	channel_6_val = 0b101000011000101100001010;
+//	channel_6_val = 0b101000010110110000001010;
 
 	tx[0] = (channel_6_val >> 16) & 0xFFU;
 	tx[1] = (channel_6_val >> 8) & 0xFFU;
@@ -1501,8 +1501,8 @@ ErrorCode_t AD4130_Channel_7(uint8_t adc_device_id, AD4130Range_t range)
 
 	/* Bits 23,22-20,17-13,12-8,3-0 */
 	/* ENABLE_7,SETUP_3,AINP_7(AIN15),AINM_7(AIN14),I_OUT0_CH_7(AIN13) */
-	// channel_7_val = 0b101100011110111000001101;
-	channel_7_val = 0b101100011100111100001101;
+	channel_7_val = 0b101100011110111000001101;
+//	channel_7_val = 0b101100011100111100001101;
 
 	tx[0] = (channel_7_val >> 16) & 0xFFU;
 	tx[1] = (channel_7_val >> 8) & 0xFFU;

@@ -19,6 +19,8 @@ static uint8_t forward_resistance_valid
 		[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
 static uint8_t synchronized_conversion_active = 0U;
 static uint8_t synchronized_channel = AD4130_CHANNEL_MIN;
+static uint8_t stad_standard_channel = AD4130_CHANNEL_MIN;
+static uint8_t stad_measurement_channel = AD4130_CHANNEL_MIN;
 
 static ErrorCode_t read_sensor_norm(void);
 static ErrorCode_t read_sensor_stad(void);
@@ -28,6 +30,7 @@ static ErrorCode_t get_sensor_channel(
 		uint8_t *sensor_channel
 );
 static ErrorCode_t switch_next_channel(void);
+static ErrorCode_t switch_next_channel_stad(void);
 static ErrorCode_t recover_fifo(
 		uint8_t error_adc_device_id,
 		ErrorCode_t error,
@@ -371,6 +374,7 @@ static ErrorCode_t read_sensor_stad(void)
 	uint8_t fifo_ready;
 	uint8_t channel;
 	uint8_t sensor_channel;
+	uint8_t expected_channel;
 	float measured_resistance;
 	float measured_temperature;
 	uint8_t read_count = 0U;
@@ -432,6 +436,11 @@ static ErrorCode_t read_sensor_stad(void)
 			adc_device_id++
 	)
 	{
+		expected_channel = (
+				(adc_device_id >= AD4130_STAD_DEVICE_ID_MIN)
+				&& (adc_device_id <= AD4130_STAD_DEVICE_ID_MAX)
+		) ? stad_standard_channel : stad_measurement_channel;
+
 		/* ad4130_measurement: read resistance from FIFO */
 		result = AD4130_Read_Resistance_FIFO(
 				adc_device_id,
@@ -439,7 +448,7 @@ static ErrorCode_t read_sensor_stad(void)
 				resistances,
 				sample_results,
 				1U,
-				(synchronized_channel >= AD4130_REVERSE_CHANNEL_MIN)
+				(expected_channel >= AD4130_REVERSE_CHANNEL_MIN)
 						? 1U
 						: 0U,
 				0U
@@ -467,7 +476,7 @@ static ErrorCode_t read_sensor_stad(void)
 
 			return result;
 		}
-		if (channels[0] != synchronized_channel)
+		if (channels[0] != expected_channel)
 		{
 			result = ERROR_CODE_AD4130_FIFO_READ;
 			recovery_result = recover_fifo(
@@ -652,7 +661,7 @@ static ErrorCode_t read_sensor_stad(void)
 	}
 
 	/* switch to the next measurement channel */
-	result = switch_next_channel();
+	result = switch_next_channel_stad();
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
@@ -1007,10 +1016,146 @@ static ErrorCode_t switch_next_channel(void)
 	return ERROR_CODE_NONE;
 }
 
+static ErrorCode_t switch_next_channel_stad(void)
+{
+	ErrorCode_t result;
+	AD4130Range_t range;
+	uint8_t current_channel;
+	uint8_t sensor_channel;
+	uint8_t next_channel;
+	uint8_t next_standard_channel;
+	uint8_t next_measurement_channel;
+
+	next_standard_channel = (
+			stad_standard_channel < AD4130_REVERSE_CHANNEL_MIN
+	) ? stad_standard_channel + AD4130_REVERSE_CHANNEL_MIN
+			: AD4130_CHANNEL_MIN;
+
+	if (stad_measurement_channel < AD4130_REVERSE_CHANNEL_MIN)
+	{
+		next_measurement_channel = stad_measurement_channel
+				+ AD4130_REVERSE_CHANNEL_MIN;
+	}
+	else
+	{
+		sensor_channel = stad_measurement_channel
+				- AD4130_REVERSE_CHANNEL_MIN;
+		next_measurement_channel = (
+				sensor_channel >= AD4130_CHANNEL_MAX
+		) ? AD4130_CHANNEL_MIN : sensor_channel + 1U;
+	}
+
+	for (
+			uint8_t adc_device_id = AD4130_DEVICE_ID_MIN;
+			adc_device_id <= AD4130_DEVICE_ID_MAX;
+			adc_device_id++
+	)
+	{
+		if (
+				(adc_device_id >= AD4130_STAD_DEVICE_ID_MIN)
+				&& (adc_device_id <= AD4130_STAD_DEVICE_ID_MAX)
+		)
+		{
+			current_channel = stad_standard_channel;
+			next_channel = next_standard_channel;
+		}
+		else
+		{
+			current_channel = stad_measurement_channel;
+			next_channel = next_measurement_channel;
+		}
+
+		result = get_sensor_channel(next_channel, &sensor_channel);
+		if (result == ERROR_CODE_NONE)
+		{
+			/* ad4130: get the next sensor channel range */
+			result = AD4130_Get_Range(
+					adc_device_id,
+					sensor_channel,
+					&range
+			);
+		}
+		if (result == ERROR_CODE_NONE)
+		{
+			/* ad4130: disable the current channel */
+			result = AD4130_Channel_Disable(
+					adc_device_id,
+					current_channel
+			);
+		}
+		if (result == ERROR_CODE_NONE)
+		{
+			/* ad4130: set the next channel current direction */
+			result = AD4130_Set_Current_Direction(
+					adc_device_id,
+					next_channel
+			);
+		}
+		if (result == ERROR_CODE_NONE)
+		{
+			switch (next_channel)
+			{
+				case 0U:
+					result = AD4130_Channel_0(adc_device_id, range);
+					break;
+
+				case 1U:
+					result = AD4130_Channel_1(adc_device_id, range);
+					break;
+
+				case 2U:
+					result = AD4130_Channel_2(adc_device_id, range);
+					break;
+
+				case 3U:
+					result = AD4130_Channel_3(adc_device_id, range);
+					break;
+
+				case 4U:
+					result = AD4130_Channel_4(adc_device_id, range);
+					break;
+
+				case 5U:
+					result = AD4130_Channel_5(adc_device_id, range);
+					break;
+
+				case 6U:
+					result = AD4130_Channel_6(adc_device_id, range);
+					break;
+
+				case 7U:
+					result = AD4130_Channel_7(adc_device_id, range);
+					break;
+
+				default:
+					result = ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
+					break;
+			}
+		}
+		if (result != ERROR_CODE_NONE)
+		{
+			printf(
+					"%d: ADC %u CHANNEL_%u switch error\r\n",
+					(int) result,
+					(unsigned int) adc_device_id,
+					(unsigned int) next_channel
+			);
+			return result;
+		}
+	}
+
+	stad_standard_channel = next_standard_channel;
+	stad_measurement_channel = next_measurement_channel;
+
+	return ERROR_CODE_NONE;
+}
+
 void sensor_read_reset_synchronized_conversion(void)
 {
 	synchronized_conversion_active = 0U;
 	synchronized_channel = AD4130_CHANNEL_MIN;
+	stad_standard_channel = AD4130_CHANNEL_MIN;
+	stad_measurement_channel = AD4130_CHANNEL_MIN;
 	for (uint8_t adc = 0U; adc < AD4130_DEVICE_COUNT; adc++)
 	{
 		for (
