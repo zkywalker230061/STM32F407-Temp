@@ -95,24 +95,29 @@ static ErrorCode_t set_measurement_mode(
 	ErrorCode_t result;
 	uint8_t previous_conversion_mode;
 	uint8_t previous_filter;
+	uint8_t previous_fifo_watermark;
 	uint8_t new_conversion_mode;
 	uint8_t new_filter;
+	uint8_t new_fifo_watermark;
 
 	switch (mode)
 	{
 		case SYSTEM_MEASUREMENT_MODE_NORMAL:
 			new_conversion_mode = AD4130_CONVERSION_MODE_NORMAL;
 			new_filter = AD4130_FILTER_POST_FILTER_3;
+			new_fifo_watermark = 1U;
 			break;
 
 		case SYSTEM_MEASUREMENT_MODE_STANDARD:
 			new_conversion_mode = AD4130_CONVERSION_MODE_STANDARD;
 			new_filter = AD4130_FILTER_POST_FILTER_3;
+			new_fifo_watermark = 1U;
 			break;
 
 		case SYSTEM_MEASUREMENT_MODE_FAST:
 			new_conversion_mode = AD4130_CONVERSION_MODE_FAST;
 			new_filter = AD4130_FILTER_SINC3_REJ60;
+			new_fifo_watermark = 4U;
 			break;
 
 		default:
@@ -128,6 +133,7 @@ static ErrorCode_t set_measurement_mode(
 	if ((force == 0U) && (sensor_adc_is_initialized() == 0U))
 	{
 		system_config.measurement_mode = mode;
+		/* sensor_read: reset synchronized conversion state */
 		sensor_read_reset_synchronized_conversion();
 		return ERROR_CODE_NONE;
 	}
@@ -137,16 +143,19 @@ static ErrorCode_t set_measurement_mode(
 		case SYSTEM_MEASUREMENT_MODE_NORMAL:
 			previous_conversion_mode = AD4130_CONVERSION_MODE_NORMAL;
 			previous_filter = AD4130_FILTER_POST_FILTER_3;
+			previous_fifo_watermark = 1U;
 			break;
 
 		case SYSTEM_MEASUREMENT_MODE_STANDARD:
 			previous_conversion_mode = AD4130_CONVERSION_MODE_STANDARD;
 			previous_filter = AD4130_FILTER_POST_FILTER_3;
+			previous_fifo_watermark = 1U;
 			break;
 
 		case SYSTEM_MEASUREMENT_MODE_FAST:
 			previous_conversion_mode = AD4130_CONVERSION_MODE_FAST;
 			previous_filter = AD4130_FILTER_SINC3_REJ60;
+			previous_fifo_watermark = 4U;
 			break;
 
 		default:
@@ -159,9 +168,11 @@ static ErrorCode_t set_measurement_mode(
 			adc_device_id++
 	)
 	{
+		/* ad4130: disable FIFO */
 		result = AD4130_FIFO_Disable(adc_device_id);
 		if (result == ERROR_CODE_NONE)
 		{
+			/* ad4130: set conversion mode */
 			result = AD4130_Set_Conversion_Mode(
 					adc_device_id,
 					new_conversion_mode
@@ -169,13 +180,20 @@ static ErrorCode_t set_measurement_mode(
 		}
 		if (result == ERROR_CODE_NONE)
 		{
+			/* ad4130: reset measurement channels */
+			result = AD4130_Reset_Measurement_Channels(adc_device_id);
+		}
+		if (result == ERROR_CODE_NONE)
+		{
+			/* ad4130: set digital filter */
 			result = AD4130_Set_Filter(adc_device_id, new_filter);
 		}
 		if (result == ERROR_CODE_NONE)
 		{
+			/* ad4130: enable FIFO */
 			result = AD4130_FIFO_Enable(
 					adc_device_id,
-					AD4130_SENSOR_CHANNEL_COUNT
+					new_fifo_watermark
 			);
 		}
 		if (result != ERROR_CODE_NONE)
@@ -186,26 +204,37 @@ static ErrorCode_t set_measurement_mode(
 					rollback_device_id++
 			)
 			{
+				/* ad4130: disable FIFO */
 				(void) AD4130_FIFO_Disable(rollback_device_id);
+				/* ad4130: restore conversion mode */
 				(void) AD4130_Set_Conversion_Mode(
 						rollback_device_id,
 						previous_conversion_mode
 				);
+				/* ad4130: restore digital filter */
 				(void) AD4130_Set_Filter(
 						rollback_device_id,
 						previous_filter
 				);
+				/* ad4130: reset measurement channels */
+				(void) AD4130_Reset_Measurement_Channels(
+						rollback_device_id
+				);
+				/* ad4130: enable FIFO */
 				(void) AD4130_FIFO_Enable(
 						rollback_device_id,
-						AD4130_SENSOR_CHANNEL_COUNT
+						previous_fifo_watermark
 				);
 			}
+			/* sensor_read: reset synchronized conversion state */
+			sensor_read_reset_synchronized_conversion();
 
 			return result;
 		}
 	}
 
 	system_config.measurement_mode = mode;
+	/* sensor_read: reset synchronized conversion state */
 	sensor_read_reset_synchronized_conversion();
 
 	return ERROR_CODE_NONE;

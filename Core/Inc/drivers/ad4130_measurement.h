@@ -21,6 +21,7 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 		float *resistances,
 		ErrorCode_t *sample_results,
 		uint8_t sample_count,
+		uint8_t autorange_enabled,
 		uint8_t discard_after_range_change
 );
 void AD4130_Reset_Range_Transition_State(void);

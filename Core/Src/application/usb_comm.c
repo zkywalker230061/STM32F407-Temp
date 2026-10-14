@@ -39,6 +39,7 @@ ErrorCode_t usb_comm_process(void)
 	ErrorCode_t transmit_result;
 	ErrorCode_t receive_error;
 
+	/* usb_cdc: get receive error */
 	receive_error = usb_cdc_receive_error;
 	if (receive_error != ERROR_CODE_NONE)
 	{
@@ -54,6 +55,7 @@ ErrorCode_t usb_comm_process(void)
 	}
 	else
 	{
+		/* usb_cdc: get received command */
 		command = usb_cdc_command;
 	}
 
@@ -73,6 +75,7 @@ ErrorCode_t usb_comm_process(void)
 		{
 			ErrorCode_t coeffs_result;
 
+			/* sensor_coeffs: process transferred coefficients */
 			coeffs_result = sensor_coeffs_process();
 			if (coeffs_result == ERROR_CODE_COEFFS_TRANSFER_NOT_READY)
 			{
@@ -95,6 +98,7 @@ ErrorCode_t usb_comm_process(void)
 		{
 			ErrorCode_t storage_result;
 
+			/* sensor_coeffs_storage: erase coefficient storage */
 			storage_result = Sensor_Coeffs_Storage_Erase();
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			if (storage_result != ERROR_CODE_NONE)
@@ -113,6 +117,7 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_LOGE:
 		{
+			/* system_config: enable measurement log */
 			system_config_set_measurement_log_enabled(1U);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			printf("command - measurement log enabled\r\n");
@@ -122,6 +127,7 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_LOGD:
 		{
+			/* system_config: disable measurement log */
 			system_config_set_measurement_log_enabled(0U);
 			usb_cdc_command = USB_CDC_COMMAND_NONE;
 			printf("command - measurement log disabled\r\n");
@@ -131,6 +137,7 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_NORM:
 		{
+			/* system_config: select NORM measurement mode */
 			command_result = system_config_set_measurement_mode(
 					SYSTEM_MEASUREMENT_MODE_NORMAL
 			);
@@ -149,6 +156,7 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_STAD:
 		{
+			/* system_config: select STAD measurement mode */
 			command_result = system_config_set_measurement_mode(
 					SYSTEM_MEASUREMENT_MODE_STANDARD
 			);
@@ -167,6 +175,7 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_FAST:
 		{
+			/* system_config: select FAST measurement mode */
 			command_result = system_config_set_measurement_mode(
 					SYSTEM_MEASUREMENT_MODE_FAST
 			);
@@ -185,6 +194,7 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_MRTU:
 		{
+			/* communication_select: select Modbus RTU */
 			command_result = communication_select_mode(
 					SYSTEM_COMMUNICATION_MODE_MODBUS_RTU
 			);
@@ -203,6 +213,7 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_MTCP:
 		{
+			/* communication_select: select Modbus TCP */
 			command_result = communication_select_mode(
 					SYSTEM_COMMUNICATION_MODE_MODBUS_TCP
 			);
@@ -221,6 +232,7 @@ ErrorCode_t usb_comm_process(void)
 
 		case USB_CDC_COMMAND_PBUS:
 		{
+			/* communication_select: select PROFIBUS */
 			command_result = communication_select_mode(
 					SYSTEM_COMMUNICATION_MODE_PROFIBUS
 			);
@@ -254,7 +266,7 @@ ErrorCode_t usb_comm_process(void)
 		}
 	}
 
-	/* process transmit */
+	/* usb_cdc: process transmit */
 	if (USB_CDC_Transmit_Ready() == 0U)
 	{
 		usb_comm_reset_transmit();
@@ -267,6 +279,7 @@ ErrorCode_t usb_comm_process(void)
 
 	if (usb_comm_tx_transmitting != 0U)
 	{
+		/* usb_cdc: check transmit state */
 		if (USB_CDC_Transmit_Busy() != 0U)
 		{
 			return command_result;
@@ -309,6 +322,7 @@ ErrorCode_t usb_comm_process(void)
 		}
 	}
 
+	/* usb_cdc: transmit log batch */
 	transmit_result = USB_CDC_Transmit(usb_comm_tx_batch, batch_length);
 	if (transmit_result != ERROR_CODE_NONE)
 	{
@@ -338,6 +352,7 @@ ErrorCode_t usb_comm_write(const uint8_t *data, uint16_t length)
 	{
 		return ERROR_CODE_USB_COMM_ILLEGAL_LENGTH;
 	}
+	/* usb_cdc: check transmit readiness */
 	if (USB_CDC_Transmit_Ready() == 0U)
 	{
 		return ERROR_CODE_USB_COMM_NOT_READY;

@@ -17,6 +17,7 @@ int _write(int file, char *data, int length)
 		return 0;
 	}
 
+	/* usb_comm: queue log data */
 	result = usb_comm_write((const uint8_t *) data, (uint16_t) length);
 	if (
 			(result != ERROR_CODE_NONE)

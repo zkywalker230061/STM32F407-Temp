@@ -27,7 +27,9 @@ ErrorCode_t communication_select_initialize(void)
 	SystemCommunicationMode_t mode;
 	ErrorCode_t result;
 
+	/* system_config: get communication mode */
 	mode = system_config_get_communication_mode();
+	/* activate communication mode */
 	result = activate(mode);
 	if (result != ERROR_CODE_NONE)
 	{
@@ -65,21 +67,25 @@ ErrorCode_t communication_select_mode(SystemCommunicationMode_t mode)
 	ErrorCode_t result;
 	ErrorCode_t restore_result;
 
+	/* system_config: get communication mode */
 	current_mode = system_config_get_communication_mode();
 	if (mode == current_mode)
 	{
 		return ERROR_CODE_NONE;
 	}
 
+	/* deactivate current communication mode */
 	result = deactivate(current_mode);
 	if (result != ERROR_CODE_NONE)
 	{
 		return result;
 	}
 
+	/* activate new communication mode */
 	result = activate(mode);
 	if (result != ERROR_CODE_NONE)
 	{
+		/* restore current communication mode */
 		restore_result = activate(current_mode);
 		if (restore_result != ERROR_CODE_NONE)
 		{
@@ -91,6 +97,7 @@ ErrorCode_t communication_select_mode(SystemCommunicationMode_t mode)
 		return result;
 	}
 
+	/* system_config: save communication mode */
 	system_config_set_communication_mode(mode);
 	return result;
 }
@@ -99,6 +106,7 @@ ErrorCode_t communication_select_process(void)
 {
 	ErrorCode_t result;
 
+	/* system_config: get communication mode */
 	switch (system_config_get_communication_mode())
 	{
 		case SYSTEM_COMMUNICATION_MODE_MODBUS_RTU:
@@ -175,6 +183,7 @@ static ErrorCode_t enable_modbus_rtu(void)
 	eMBParity modbus_parity;
 	eMBErrorCode modbus_result;
 
+	/* system_config: get Modbus RTU parity */
 	parity = system_config_get_modbus_rtu_parity();
 	switch (parity)
 	{
@@ -194,6 +203,7 @@ static ErrorCode_t enable_modbus_rtu(void)
 			return ERROR_CODE_MODBUS_RTU_ILLEGAL_PARAM;
 	}
 
+	/* modbus: initialize RTU */
 	modbus_result = eMBInit(
 			MB_RTU,
 			system_config_get_modbus_rtu_slave_address(),

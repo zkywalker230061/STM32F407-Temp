@@ -43,6 +43,7 @@ static ErrorCode_t USB_CDC_Identify_Frame(void);
 void USB_CDC_Initialize(void)
 {
 	USB_CDC_Reset_Frame();
+	/* usb_cdc_scup: reset transfer state */
 	USB_CDC_SCUP_Reset();
 	usb_cdc_command = USB_CDC_COMMAND_NONE;
 	usb_cdc_receive_error = ERROR_CODE_NONE;
@@ -105,6 +106,7 @@ ErrorCode_t USB_CDC_Receive(const uint8_t *data, uint32_t length)
 
 		if (usb_cdc_frame == USB_CDC_FRAME_SCUP)
 		{
+			/* usb_cdc_scup: receive transfer header */
 			result = USB_CDC_SCUP_Receive(usb_cdc_magic, USB_CDC_MAGIC_SIZE);
 			if (result != ERROR_CODE_COEFFS_TRANSFER_NOT_READY)
 			{
@@ -228,6 +230,7 @@ ErrorCode_t USB_CDC_Receive(const uint8_t *data, uint32_t length)
 		return ERROR_CODE_COEFFS_TRANSFER_NOT_READY;
 	}
 
+	/* usb_cdc_scup: receive transfer data */
 	result = USB_CDC_SCUP_Receive(&data[data_index], length-data_index);
 	if (result != ERROR_CODE_COEFFS_TRANSFER_NOT_READY)
 	{

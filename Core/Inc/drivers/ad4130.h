@@ -196,6 +196,15 @@ ErrorCode_t AD4130_Channel_0(uint8_t adc_device_id, AD4130Range_t range);
 ErrorCode_t AD4130_Channel_1(uint8_t adc_device_id, AD4130Range_t range);
 ErrorCode_t AD4130_Channel_2(uint8_t adc_device_id, AD4130Range_t range);
 ErrorCode_t AD4130_Channel_3(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Channel_4(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Channel_5(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Channel_6(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Channel_7(uint8_t adc_device_id, AD4130Range_t range);
+ErrorCode_t AD4130_Channel_Disable(
+		uint8_t adc_device_id,
+		uint8_t channel
+);
+ErrorCode_t AD4130_Reset_Measurement_Channels(uint8_t adc_device_id);
 ErrorCode_t AD4130_Get_Range(
 		uint8_t adc_device_id,
 		uint8_t channel,
@@ -220,6 +229,10 @@ ErrorCode_t AD4130_FIFO_Read(
 );
 ErrorCode_t AD4130_Set_Filter(uint8_t adc_device_id, uint8_t filter);
 ErrorCode_t AD4130_Set_Conversion_Mode(uint8_t adc_device_id, uint8_t mode);
+ErrorCode_t AD4130_Set_Current_Direction(
+		uint8_t adc_device_id,
+		uint8_t channel
+);
 void AD4130_Synchronize(void);
 
 /* ------------------------------------------------------------------------ */

@@ -12,6 +12,7 @@
 
 static uint8_t discard_next_samples
 		[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT] = {0};
+static uint8_t discard_next_fifo_batch[AD4130_DEVICE_COUNT] = {0};
 
 static ErrorCode_t AD4130_Convert_Resistance(
 		AD4130Range_t range,
@@ -119,15 +120,17 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 		float *resistances,
 		ErrorCode_t *sample_results,
 		uint8_t sample_count,
+		uint8_t autorange_enabled,
 		uint8_t discard_after_range_change
 )
 {
 	ErrorCode_t result;
-	AD4130FIFOSample_t samples[AD4130_SENSOR_CHANNEL_COUNT];
+	AD4130FIFOSample_t samples[4U];
 	AD4130Range_t ranges[AD4130_SENSOR_CHANNEL_COUNT];
 	AD4130Range_t new_ranges[AD4130_SENSOR_CHANNEL_COUNT];
 	AD4130Range_t new_range;
 	uint8_t channel;
+	uint8_t sensor_channel;
 
 	if (
 			(adc_device_id < AD4130_DEVICE_ID_MIN)
@@ -144,7 +147,7 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 	{
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
 	}
-	if ((sample_count == 0U) || (sample_count > AD4130_SENSOR_CHANNEL_COUNT))
+	if ((sample_count == 0U) || (sample_count > 4U))
 	{
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
 	}
@@ -166,32 +169,50 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 	{
 		return result;
 	}
+	/* discard the pending FIFO batch */
+	if (discard_next_fifo_batch[adc_device_id-1U] != 0U)
+	{
+		discard_next_fifo_batch[adc_device_id-1U] = 0U;
+		for (uint8_t sample = 0U; sample < sample_count; sample++)
+		{
+			channels[sample] = samples[sample].header & 0x0FU;
+			resistances[sample] = 0.0f;
+			sample_results[sample] = ERROR_CODE_MEASUREMENT_NOT_READY;
+		}
+
+		return ERROR_CODE_NONE;
+	}
 
 	for (uint8_t sample = 0U; sample < sample_count; sample++)
 	{
 		channels[sample] = samples[sample].header & 0x0FU;
 		resistances[sample] = 0.0f;
 		channel = channels[sample];
-		if (channel > AD4130_CHANNEL_MAX)
+		if (
+				(channel > AD4130_REVERSE_CHANNEL_MAX)
+				|| (
+						(channel > AD4130_CHANNEL_MAX)
+						&& (channel < AD4130_REVERSE_CHANNEL_MIN)
+				)
+		)
 		{
 			sample_results[sample] = ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
 			continue;
 		}
-		if (discard_next_samples[adc_device_id-1U][channel] != 0U)
-		{
-			discard_next_samples[adc_device_id-1U][channel] = 0U;
-			sample_results[sample] = ERROR_CODE_MEASUREMENT_NOT_READY;
-			continue;
-		}
-
-		new_range = ranges[channel];
+		sensor_channel = (channel >= AD4130_REVERSE_CHANNEL_MIN)
+				? channel - AD4130_REVERSE_CHANNEL_MIN
+				: channel;
+		new_range = ranges[sensor_channel];
 		sample_results[sample] = AD4130_Convert_Resistance(
-				ranges[channel],
+				ranges[sensor_channel],
 				samples[sample].data,
 				&resistances[sample],
 				&new_range
 		);
-		new_ranges[channel] = new_range;
+		if (autorange_enabled != 0U)
+		{
+			new_ranges[sensor_channel] = new_range;
+		}
 	}
 
 	/* ad4130: set range changes after processing FIFO */
@@ -213,7 +234,8 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 		}
 		if (discard_after_range_change != 0U)
 		{
-			discard_next_samples[adc_device_id-1U][channel] = 1U;
+			/* discard the next FIFO batch */
+			discard_next_fifo_batch[adc_device_id-1U] = 1U;
 		}
 	}
 
@@ -224,6 +246,7 @@ void AD4130_Reset_Range_Transition_State(void)
 {
 	for (uint8_t adc = 0U; adc < AD4130_DEVICE_COUNT; adc++)
 	{
+		discard_next_fifo_batch[adc] = 0U;
 		for (uint8_t channel = 0U; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
 		{
 			discard_next_samples[adc][channel] = 0U;

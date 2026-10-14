@@ -26,12 +26,14 @@ ErrorCode_t sensor_adc_initialize(void)
 
 	/* initialize adc */
 	result = initialize_once();
+	/* usb_comm: process communication */
 	(void) usb_comm_process();
 	if (
 			(result == ERROR_CODE_NONE)
 			|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
 	)
 	{
+		/* system_config: apply measurement mode */
 		result = system_config_apply_current_measurement_mode();
 		if (result == ERROR_CODE_NONE)
 		{
@@ -51,12 +53,14 @@ ErrorCode_t sensor_adc_initialize(void)
 	{
 		HAL_Delay(SENSOR_ADC_INITIALIZE_RETRY_DELAY_MS);
 		result = initialize_once();
+		/* usb_comm: process communication */
 		(void) usb_comm_process();
 		if (
 				(result == ERROR_CODE_NONE)
 				|| (result == ERROR_CODE_MEASUREMENT_STATUS_POR)
 		)
 		{
+			/* system_config: apply measurement mode */
 			result = system_config_apply_current_measurement_mode();
 			if (result == ERROR_CODE_NONE)
 			{
@@ -144,7 +148,7 @@ static ErrorCode_t initialize_once(void)
 			return ERROR_CODE_AD4130_ID_MISMATCH;
 		}
 		/* ADC_CONTROL:		0x0710 - 0000 0111 0001 0000 */
-		/* IO_CONTROL:		0x0000 - 0000 0000 0000 0000 */
+		/* IO_CONTROL:		0x000F - 0000 0000 0000 1111 */
 		/* VBIAS_CONTROL:	0x0000 - 0000 0000 0000 0000 */
 		/* ERROR_EN:		0x007B - 0000 0000 0111 1011 */
 		/* MISC:			0x2000 - 0010 0000 0000 0000 */
@@ -172,49 +176,6 @@ static ErrorCode_t initialize_once(void)
 			);
 			return result;
 		}
-
-		result = AD4130_Channel_1(
-				adc_device_id,
-				AD4130_RANGE_10UA_GAIN_8
-		);
-		if (result != ERROR_CODE_NONE)
-		{
-			printf(
-					"%d: ADC %u CHANNEL_1 setup error\r\n",
-					(int) result,
-					(unsigned int) adc_device_id
-			);
-			return result;
-		}
-
-		result = AD4130_Channel_2(
-				adc_device_id,
-				AD4130_RANGE_10UA_GAIN_8
-		);
-		if (result != ERROR_CODE_NONE)
-		{
-			printf(
-					"%d: ADC %u CHANNEL_2 setup error\r\n",
-					(int) result,
-					(unsigned int) adc_device_id
-			);
-			return result;
-		}
-
-		result = AD4130_Channel_3(
-				adc_device_id,
-				AD4130_RANGE_10UA_GAIN_8
-		);
-		if (result != ERROR_CODE_NONE)
-		{
-			printf(
-					"%d: ADC %u CHANNEL_3 setup error\r\n",
-					(int) result,
-					(unsigned int) adc_device_id
-			);
-			return result;
-		}
-
 	}
 
 	/* ad4130: gain internal calibration */

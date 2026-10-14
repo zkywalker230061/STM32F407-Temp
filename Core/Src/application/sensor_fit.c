@@ -26,6 +26,7 @@ static ErrorCode_t resistance_to_temperature_from_inc(
 	{
 		if (resistance >= segments[i].r_right && resistance < segments[i].r_left)
 		{
+			/* chebychev: calculate fitted temperature */
 			*temperature = chebychev_point(
 					resistance,
 					segments[i].z_min, segments[i].z_max,
@@ -62,6 +63,7 @@ static ErrorCode_t resistance_to_temperature_from_curve(
 				&& (resistance < curve->segments[i].r_left)
 		)
 		{
+			/* chebychev: calculate fitted temperature */
 			*temperature = chebychev_point(
 					resistance,
 					curve->segments[i].z_min,
