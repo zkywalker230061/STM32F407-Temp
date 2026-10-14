@@ -116,6 +116,7 @@ ErrorCode_t AD4130_Read_Resistance(
 
 ErrorCode_t AD4130_Read_Resistance_FIFO(
 		uint8_t adc_device_id,
+		uint8_t expected_channel,
 		uint8_t *channels,
 		float *resistances,
 		ErrorCode_t *sample_results,
@@ -151,6 +152,10 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 	{
 		return ERROR_CODE_MEASUREMENT_ILLEGAL_PARAM;
 	}
+	if (expected_channel > AD4130_REVERSE_CHANNEL_MAX)
+	{
+		return ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
+	}
 
 	/* ad4130: get channel ranges */
 	for (channel = 0U; channel < AD4130_SENSOR_CHANNEL_COUNT; channel++)
@@ -169,13 +174,21 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 	{
 		return result;
 	}
+	/* validate FIFO channels before conversion and autoranging */
+	for (uint8_t sample = 0U; sample < sample_count; sample++)
+	{
+		channels[sample] = samples[sample].header & 0x0FU;
+		if (channels[sample] != expected_channel)
+		{
+			return ERROR_CODE_AD4130_FIFO_READ;
+		}
+	}
 	/* discard the pending FIFO batch */
 	if (discard_next_fifo_batch[adc_device_id-1U] != 0U)
 	{
 		discard_next_fifo_batch[adc_device_id-1U] = 0U;
 		for (uint8_t sample = 0U; sample < sample_count; sample++)
 		{
-			channels[sample] = samples[sample].header & 0x0FU;
 			resistances[sample] = 0.0f;
 			sample_results[sample] = ERROR_CODE_MEASUREMENT_NOT_READY;
 		}
@@ -185,20 +198,8 @@ ErrorCode_t AD4130_Read_Resistance_FIFO(
 
 	for (uint8_t sample = 0U; sample < sample_count; sample++)
 	{
-		channels[sample] = samples[sample].header & 0x0FU;
 		resistances[sample] = 0.0f;
 		channel = channels[sample];
-		if (
-				(channel > AD4130_REVERSE_CHANNEL_MAX)
-				|| (
-						(channel > AD4130_CHANNEL_MAX)
-						&& (channel < AD4130_REVERSE_CHANNEL_MIN)
-				)
-		)
-		{
-			sample_results[sample] = ERROR_CODE_MEASUREMENT_ILLEGAL_CHANNEL;
-			continue;
-		}
 		sensor_channel = (channel >= AD4130_REVERSE_CHANNEL_MIN)
 				? channel - AD4130_REVERSE_CHANNEL_MIN
 				: channel;

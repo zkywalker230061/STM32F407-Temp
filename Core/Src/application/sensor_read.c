@@ -13,7 +13,7 @@
 
 static float resistance[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
 static float temperature[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
-static float forward_resistance
+static float forward_resistances
 		[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
 static uint8_t forward_resistance_valid
 		[AD4130_DEVICE_COUNT][AD4130_SENSOR_CHANNEL_COUNT];
@@ -68,8 +68,10 @@ static ErrorCode_t read_sensor_norm(void)
 	uint8_t fifo_ready;
 	uint8_t channel;
 	uint8_t sensor_channel;
-	float measured_resistance;
-	float measured_temperature;
+	float forward_resistance;
+	float reverse_resistance;
+	float averaged_resistance;
+	float averaged_temperature;
 	uint8_t read_count = 0U;
 
 	if (synchronized_conversion_active == 0U)
@@ -132,6 +134,7 @@ static ErrorCode_t read_sensor_norm(void)
 		/* ad4130_measurement: read resistance from FIFO */
 		result = AD4130_Read_Resistance_FIFO(
 				adc_device_id,
+				synchronized_channel,
 				channels,
 				resistances,
 				sample_results,
@@ -164,22 +167,6 @@ static ErrorCode_t read_sensor_norm(void)
 
 			return result;
 		}
-		if (channels[0] != synchronized_channel)
-		{
-			result = ERROR_CODE_AD4130_FIFO_READ;
-			recovery_result = recover_fifo(
-					adc_device_id,
-					result,
-					1U
-			);
-			if (recovery_result != ERROR_CODE_NONE)
-			{
-				return recovery_result;
-			}
-
-			return ERROR_CODE_MEASUREMENT_NOT_READY;
-		}
-
 		for (uint8_t sample = 0U; sample < 1U; sample++)
 		{
 			channel = channels[sample];
@@ -194,7 +181,6 @@ static ErrorCode_t read_sensor_norm(void)
 				forward_resistance_valid
 						[adc_device_id-1U][sensor_channel] = 0U;
 			}
-			measured_resistance = resistances[sample];
 			result = sample_results[sample];
 			if (result == ERROR_CODE_MEASUREMENT_NOT_READY)
 			{
@@ -251,13 +237,13 @@ static ErrorCode_t read_sensor_norm(void)
 				continue;
 			}
 
-			read_count++;
-
 			if (channel < AD4130_REVERSE_CHANNEL_MIN)
 			{
+				forward_resistance = resistances[sample];
+
 				/* store the forward resistance */
-				forward_resistance
-						[adc_device_id-1U][sensor_channel] = measured_resistance;
+				forward_resistances
+						[adc_device_id-1U][sensor_channel] = forward_resistance;
 				forward_resistance_valid
 						[adc_device_id-1U][sensor_channel] = 1U;
 			}
@@ -266,20 +252,23 @@ static ErrorCode_t read_sensor_norm(void)
 							[adc_device_id-1U][sensor_channel] != 0U
 			)
 			{
+				forward_resistance = forward_resistances
+						[adc_device_id-1U][sensor_channel];
+				reverse_resistance = resistances[sample];
+
 				/* average the forward and reverse resistances */
-				resistance[adc_device_id-1U][sensor_channel] = (
-						forward_resistance[adc_device_id-1U][sensor_channel]
-						+ measured_resistance
+				averaged_resistance = (
+						forward_resistance + reverse_resistance
 				) / 2.0f;
 				forward_resistance_valid
 						[adc_device_id-1U][sensor_channel] = 0U;
 
 				/* sensor_coeffs: get sensor curve */
-				/* sensor_fit: average temperature fit */
+				/* sensor_fit: fit the averaged resistance */
 				fit_result = resistance_to_temperature(
-						resistance[adc_device_id-1U][sensor_channel],
+						averaged_resistance,
 						sensor_coeffs_get_curve(adc_device_id, sensor_channel),
-						&temperature[adc_device_id-1U][sensor_channel]
+						&averaged_temperature
 				);
 				if (fit_result != ERROR_CODE_NONE)
 				{
@@ -287,7 +276,7 @@ static ErrorCode_t read_sensor_norm(void)
 							"%d: ADC %u CHANNEL_%u fit error\r\n",
 							(int) fit_result,
 							(unsigned int) adc_device_id,
-							(unsigned int) channel
+							(unsigned int) sensor_channel
 					);
 					/* modbus_registers: set channel error */
 					vMBRegInputSetChannelError(
@@ -298,52 +287,42 @@ static ErrorCode_t read_sensor_norm(void)
 					{
 						return fit_result;
 					}
+
+					continue;
 				}
-				else
+
+				/* update resistance and temperature cache */
+				resistance[adc_device_id-1U][sensor_channel] =
+						averaged_resistance;
+				temperature[adc_device_id-1U][sensor_channel] =
+						averaged_temperature;
+
+				/* modbus_registers: update averaged input registers */
+				vMBRegInputUpdate(
+						adc_device_id-1U,
+						sensor_channel,
+						averaged_resistance,
+						averaged_temperature
+				);
+
+				/* system_config: check measurement log state */
+				if (system_config_get_measurement_log_enabled() != 0U)
 				{
-					/* modbus_registers: update averaged input registers */
-					vMBRegInputUpdate(
-							adc_device_id-1U,
-							sensor_channel,
-							resistance[adc_device_id-1U][sensor_channel],
-							temperature[adc_device_id-1U][sensor_channel]
+					printf(
+							"%u-%u: %.4f ohm, %.4f ohm\r\n"
+							"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
+							(unsigned int) adc_device_id,
+							(unsigned int) (sensor_channel+1U),
+							(double) forward_resistance,
+							(double) reverse_resistance,
+							(unsigned int) adc_device_id,
+							(unsigned int) (sensor_channel+1U),
+							(double) averaged_resistance,
+							(double) averaged_temperature
 					);
 				}
-			}
 
-			/* sensor_coeffs: get sensor curve */
-			/* sensor_fit: temperature fit */
-			fit_result = resistance_to_temperature(
-					measured_resistance,
-					sensor_coeffs_get_curve(adc_device_id, sensor_channel),
-					&measured_temperature
-			);
-			if (fit_result != ERROR_CODE_NONE)
-			{
-				printf(
-						"%d: ADC %u CHANNEL_%u fit error\r\n",
-						(int) fit_result,
-						(unsigned int) adc_device_id,
-						(unsigned int) channel
-				);
-				if (fit_result == ERROR_CODE_SENSOR_FIT_ILLEGAL_PARAM)
-				{
-					return fit_result;
-				}
-
-				continue;
-			}
-
-			/* system_config: check measurement log state */
-			if (system_config_get_measurement_log_enabled() != 0U)
-			{
-				printf(
-						"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
-						(unsigned int) adc_device_id,
-						(unsigned int) (channel+1U),
-						(double) measured_resistance,
-						(double) measured_temperature
-				);
+				read_count++;
 			}
 		}
 	}
@@ -375,8 +354,10 @@ static ErrorCode_t read_sensor_stad(void)
 	uint8_t channel;
 	uint8_t sensor_channel;
 	uint8_t expected_channel;
-	float measured_resistance;
-	float measured_temperature;
+	float forward_resistance;
+	float reverse_resistance;
+	float averaged_resistance;
+	float averaged_temperature;
 	uint8_t read_count = 0U;
 
 	if (synchronized_conversion_active == 0U)
@@ -444,6 +425,7 @@ static ErrorCode_t read_sensor_stad(void)
 		/* ad4130_measurement: read resistance from FIFO */
 		result = AD4130_Read_Resistance_FIFO(
 				adc_device_id,
+				expected_channel,
 				channels,
 				resistances,
 				sample_results,
@@ -476,22 +458,6 @@ static ErrorCode_t read_sensor_stad(void)
 
 			return result;
 		}
-		if (channels[0] != expected_channel)
-		{
-			result = ERROR_CODE_AD4130_FIFO_READ;
-			recovery_result = recover_fifo(
-					adc_device_id,
-					result,
-					1U
-			);
-			if (recovery_result != ERROR_CODE_NONE)
-			{
-				return recovery_result;
-			}
-
-			return ERROR_CODE_MEASUREMENT_NOT_READY;
-		}
-
 		for (uint8_t sample = 0U; sample < 1U; sample++)
 		{
 			channel = channels[sample];
@@ -506,7 +472,6 @@ static ErrorCode_t read_sensor_stad(void)
 				forward_resistance_valid
 						[adc_device_id-1U][sensor_channel] = 0U;
 			}
-			measured_resistance = resistances[sample];
 			result = sample_results[sample];
 			if (result == ERROR_CODE_MEASUREMENT_NOT_READY)
 			{
@@ -563,13 +528,13 @@ static ErrorCode_t read_sensor_stad(void)
 				continue;
 			}
 
-			read_count++;
-
 			if (channel < AD4130_REVERSE_CHANNEL_MIN)
 			{
+				forward_resistance = resistances[sample];
+
 				/* store the forward resistance */
-				forward_resistance
-						[adc_device_id-1U][sensor_channel] = measured_resistance;
+				forward_resistances
+						[adc_device_id-1U][sensor_channel] = forward_resistance;
 				forward_resistance_valid
 						[adc_device_id-1U][sensor_channel] = 1U;
 			}
@@ -578,20 +543,23 @@ static ErrorCode_t read_sensor_stad(void)
 							[adc_device_id-1U][sensor_channel] != 0U
 			)
 			{
+				forward_resistance = forward_resistances
+						[adc_device_id-1U][sensor_channel];
+				reverse_resistance = resistances[sample];
+
 				/* average the forward and reverse resistances */
-				resistance[adc_device_id-1U][sensor_channel] = (
-						forward_resistance[adc_device_id-1U][sensor_channel]
-						+ measured_resistance
+				averaged_resistance = (
+						forward_resistance + reverse_resistance
 				) / 2.0f;
 				forward_resistance_valid
 						[adc_device_id-1U][sensor_channel] = 0U;
 
 				/* sensor_coeffs: get sensor curve */
-				/* sensor_fit: average temperature fit */
+				/* sensor_fit: fit the averaged resistance */
 				fit_result = resistance_to_temperature(
-						resistance[adc_device_id-1U][sensor_channel],
+						averaged_resistance,
 						sensor_coeffs_get_curve(adc_device_id, sensor_channel),
-						&temperature[adc_device_id-1U][sensor_channel]
+						&averaged_temperature
 				);
 				if (fit_result != ERROR_CODE_NONE)
 				{
@@ -599,7 +567,7 @@ static ErrorCode_t read_sensor_stad(void)
 							"%d: ADC %u CHANNEL_%u fit error\r\n",
 							(int) fit_result,
 							(unsigned int) adc_device_id,
-							(unsigned int) channel
+							(unsigned int) sensor_channel
 					);
 					/* modbus_registers: set channel error */
 					vMBRegInputSetChannelError(
@@ -610,52 +578,42 @@ static ErrorCode_t read_sensor_stad(void)
 					{
 						return fit_result;
 					}
+
+					continue;
 				}
-				else
+
+				/* update resistance and temperature cache */
+				resistance[adc_device_id-1U][sensor_channel] =
+						averaged_resistance;
+				temperature[adc_device_id-1U][sensor_channel] =
+						averaged_temperature;
+
+				/* modbus_registers: update averaged input registers */
+				vMBRegInputUpdate(
+						adc_device_id-1U,
+						sensor_channel,
+						averaged_resistance,
+						averaged_temperature
+				);
+
+				/* system_config: check measurement log state */
+				if (system_config_get_measurement_log_enabled() != 0U)
 				{
-					/* modbus_registers: update averaged input registers */
-					vMBRegInputUpdate(
-							adc_device_id-1U,
-							sensor_channel,
-							resistance[adc_device_id-1U][sensor_channel],
-							temperature[adc_device_id-1U][sensor_channel]
+					printf(
+							"%u-%u: %.4f ohm, %.4f ohm\r\n"
+							"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
+							(unsigned int) adc_device_id,
+							(unsigned int) (sensor_channel+1U),
+							(double) forward_resistance,
+							(double) reverse_resistance,
+							(unsigned int) adc_device_id,
+							(unsigned int) (sensor_channel+1U),
+							(double) averaged_resistance,
+							(double) averaged_temperature
 					);
 				}
-			}
 
-			/* sensor_coeffs: get sensor curve */
-			/* sensor_fit: temperature fit */
-			fit_result = resistance_to_temperature(
-					measured_resistance,
-					sensor_coeffs_get_curve(adc_device_id, sensor_channel),
-					&measured_temperature
-			);
-			if (fit_result != ERROR_CODE_NONE)
-			{
-				printf(
-						"%d: ADC %u CHANNEL_%u fit error\r\n",
-						(int) fit_result,
-						(unsigned int) adc_device_id,
-						(unsigned int) channel
-				);
-				if (fit_result == ERROR_CODE_SENSOR_FIT_ILLEGAL_PARAM)
-				{
-					return fit_result;
-				}
-
-				continue;
-			}
-
-			/* system_config: check measurement log state */
-			if (system_config_get_measurement_log_enabled() != 0U)
-			{
-				printf(
-						"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
-						(unsigned int) adc_device_id,
-						(unsigned int) (channel+1U),
-						(double) measured_resistance,
-						(double) measured_temperature
-				);
+				read_count++;
 			}
 		}
 	}
@@ -739,6 +697,7 @@ static ErrorCode_t read_sensor_fast(void)
 		/* ad4130_measurement: read resistance from FIFO */
 		result = AD4130_Read_Resistance_FIFO(
 				adc_device_id,
+				AD4130_CHANNEL_MIN,
 				channels,
 				resistances,
 				sample_results,
@@ -794,7 +753,10 @@ static ErrorCode_t read_sensor_fast(void)
 							(unsigned int) channel
 					);
 					/* modbus_registers: set channel error */
-					vMBRegInputSetChannelError(adc_device_id-1U, channel);
+					vMBRegInputSetChannelError(
+							adc_device_id-1U,
+							channel
+					);
 				}
 				else
 				{
@@ -838,7 +800,10 @@ static ErrorCode_t read_sensor_fast(void)
 						(unsigned int) channel
 				);
 				/* modbus_registers: set channel error */
-				vMBRegInputSetChannelError(adc_device_id-1U, channel);
+				vMBRegInputSetChannelError(
+						adc_device_id-1U,
+						channel
+				);
 				if (fit_result == ERROR_CODE_SENSOR_FIT_ILLEGAL_PARAM)
 				{
 					return fit_result;
@@ -848,8 +813,8 @@ static ErrorCode_t read_sensor_fast(void)
 			}
 
 			/* update resistance and temperature cache */
-			resistance[adc_device_id - 1U][channel] = measured_resistance;
-			temperature[adc_device_id - 1U][channel] = measured_temperature;
+			resistance[adc_device_id-1U][channel] = measured_resistance;
+			temperature[adc_device_id-1U][channel] = measured_temperature;
 
 			/* modbus_registers: update input registers */
 			vMBRegInputUpdate(
@@ -858,8 +823,6 @@ static ErrorCode_t read_sensor_fast(void)
 					measured_resistance,
 					measured_temperature
 			);
-			read_count++;
-
 			/* system_config: check measurement log state */
 			if (system_config_get_measurement_log_enabled() != 0U)
 			{
@@ -867,10 +830,12 @@ static ErrorCode_t read_sensor_fast(void)
 						"%u-%u: R-%.4f ohm, T-%.5f K\r\n",
 						(unsigned int) adc_device_id,
 						(unsigned int) (channel+1U),
-						(double) resistance[adc_device_id - 1U][channel],
-						(double) temperature[adc_device_id - 1U][channel]
+						(double) measured_resistance,
+						(double) measured_temperature
 				);
 			}
+
+			read_count++;
 		}
 	}
 

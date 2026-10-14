@@ -8,6 +8,7 @@
 
 #define AD4130_GAIN_CALIBRATION_TIMEOUT_MS    5000U
 #define AD4130_OFFSET_CALIBRATION_TIMEOUT_MS  500U
+#define AD4130_SPI_TIMEOUT_MS                 10U
 
 /* ------------------------------------------------------------------------ */
 
@@ -305,7 +306,9 @@ ErrorCode_t AD4130_Read_8_Bit(
 	tx[0] = 0x40U | reg_addr;  /* 0b01000000, COMMS read */
 
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_RESET);
-	status = HAL_SPI_TransmitReceive(device->hspi, tx, rx, 2U, HAL_MAX_DELAY);
+	status = HAL_SPI_TransmitReceive(
+			device->hspi, tx, rx, 2U, AD4130_SPI_TIMEOUT_MS
+	);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 
 	if (status == HAL_OK)
@@ -340,7 +343,9 @@ ErrorCode_t AD4130_Read_16_Bit(
 	tx[0] = 0x40U | reg_addr;  /* 0b01000000, COMMS read */
 
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_RESET);
-	status = HAL_SPI_TransmitReceive(device->hspi, tx, rx, 3U, HAL_MAX_DELAY);
+	status = HAL_SPI_TransmitReceive(
+			device->hspi, tx, rx, 3U, AD4130_SPI_TIMEOUT_MS
+	);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 
 	if (status == HAL_OK)
@@ -375,7 +380,9 @@ ErrorCode_t AD4130_Read_24_Bit(
 	tx[0] = 0x40U | reg_addr;  /* 0b01000000, COMMS read */
 
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_RESET);
-	status = HAL_SPI_TransmitReceive(device->hspi, tx, rx, 4U, HAL_MAX_DELAY);
+	status = HAL_SPI_TransmitReceive(
+			device->hspi, tx, rx, 4U, AD4130_SPI_TIMEOUT_MS
+	);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 
 	if (status == HAL_OK)
@@ -414,7 +421,9 @@ ErrorCode_t AD4130_Read_32_Bit(
 	tx[0] = 0x40U | reg_addr;  /* 0b01000000, COMMS read */
 
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_RESET);
-	status = HAL_SPI_TransmitReceive(device->hspi, tx, rx, 5U, HAL_MAX_DELAY);
+	status = HAL_SPI_TransmitReceive(
+			device->hspi, tx, rx, 5U, AD4130_SPI_TIMEOUT_MS
+	);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 
 	if (status == HAL_OK)
@@ -463,7 +472,9 @@ ErrorCode_t AD4130_Write(
 	}
 
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_RESET);
-	status = HAL_SPI_Transmit(device->hspi, tx, length+1U, HAL_MAX_DELAY);
+	status = HAL_SPI_Transmit(
+			device->hspi, tx, length+1U, AD4130_SPI_TIMEOUT_MS
+	);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 
 	if (status == HAL_OK)
@@ -489,7 +500,9 @@ ErrorCode_t AD4130_Reset(uint8_t adc_device_id)
 	}
 
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_RESET);
-	status = HAL_SPI_Transmit(device->hspi, tx, 8U, HAL_MAX_DELAY);
+	status = HAL_SPI_Transmit(
+			device->hspi, tx, 8U, AD4130_SPI_TIMEOUT_MS
+	);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 
 	if (status == HAL_OK)
@@ -1891,7 +1904,7 @@ ErrorCode_t AD4130_FIFO_Read(
 			tx,
 			rx,
 			transfer_length,
-			HAL_MAX_DELAY
+			AD4130_SPI_TIMEOUT_MS
 	);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 

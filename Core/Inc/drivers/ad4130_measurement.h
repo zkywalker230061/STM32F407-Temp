@@ -17,6 +17,7 @@ ErrorCode_t AD4130_Read_Resistance(
 );
 ErrorCode_t AD4130_Read_Resistance_FIFO(
 		uint8_t adc_device_id,
+		uint8_t expected_channel,
 		uint8_t *channels,
 		float *resistances,
 		ErrorCode_t *sample_results,
