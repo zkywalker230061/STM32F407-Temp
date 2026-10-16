@@ -104,7 +104,7 @@ static ErrorCode_t set_measurement_mode(
 	{
 		case SYSTEM_MEASUREMENT_MODE_NORMAL:
 			new_conversion_mode = AD4130_CONVERSION_MODE_NORMAL;
-			new_filter = AD4130_FILTER_POST_FILTER_3;
+			new_filter = AD4130_FILTER_POST_FILTER_1;
 			new_fifo_watermark = 1U;
 			break;
 
@@ -142,7 +142,7 @@ static ErrorCode_t set_measurement_mode(
 	{
 		case SYSTEM_MEASUREMENT_MODE_NORMAL:
 			previous_conversion_mode = AD4130_CONVERSION_MODE_NORMAL;
-			previous_filter = AD4130_FILTER_POST_FILTER_3;
+			previous_filter = AD4130_FILTER_POST_FILTER_1;
 			previous_fifo_watermark = 1U;
 			break;
 

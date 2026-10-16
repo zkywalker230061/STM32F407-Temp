@@ -477,10 +477,6 @@ ErrorCode_t AD4130_Write(
 	);
 	HAL_GPIO_WritePin(device->cs_port, device->cs_pin, GPIO_PIN_SET);
 
-	if (status == HAL_OK)
-	{
-		HAL_Delay(1);
-	}
 	return AD4130_Convert_HAL_Status(status);
 }
 
@@ -1266,14 +1262,19 @@ ErrorCode_t AD4130_Set_Filter(uint8_t adc_device_id, uint8_t filter)
 	/* SETTLE_n,FILTER_MODE_n,FS_n */
 	switch (filter)
 	{
-		case AD4130_FILTER_SINC3_REJ60:
-			/* Sinc3 + REJ60 (FS 48) */
-			filter_value = 0b110000000011000000110000;
+		case AD4130_FILTER_POST_FILTER_1:
+			/* Sinc3 + Post Filter 1, 13.33 ms settling time */
+			filter_value = 0b101000000101000000110000;
 			break;
 
 		case AD4130_FILTER_POST_FILTER_3:
-			/* Sinc3 + Post Filter 3 */
+			/* Sinc3 + Post Filter 3, 26.66 ms settling time */
 			filter_value = 0b110000000111000000110000;
+			break;
+
+		case AD4130_FILTER_SINC3_REJ60:
+			/* Sinc3 + REJ60 (FS 48), 13.33 ms settling time */
+			filter_value = 0b101000000011000000110000;
 			break;
 
 		default:
